@@ -1,4 +1,5 @@
 import { mergeProps, Show, splitProps, type Component } from "solid-js";
+import "./Input.css";
 
 const Input: Component<{
   isTextArea?: boolean;
@@ -66,15 +67,4 @@ const TextArea: Component<{
   );
 };
 
-const Button: Component<{
-  disabled?: boolean;
-  collect: () => Promise<void>;
-}> = (props) => {
-  return (
-    <button class="app-button" type="button" disabled={props.disabled} onclick={props.collect}>
-      {props.disabled ? "Working..." : "Submit"}
-    </button>
-  );
-};
-
-export { Input, Button };
+export { Input };

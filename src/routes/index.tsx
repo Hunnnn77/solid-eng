@@ -1,12 +1,14 @@
 import { Title } from "@solidjs/meta";
 import { action, useAction } from "@solidjs/router";
 import { batch, createSignal, onMount, Show, splitProps, type Component } from "solid-js";
-import { Button, Input } from "~/components/Input";
+import "./index.css";
+import { Input } from "~/components/Input";
 import type { TAction } from "~/types";
 import { streamText } from "ai";
 import dedent from "dedent";
 import { marked } from "marked";
 import { deepseek } from "~/client/llm";
+import { Button } from "~/components/Button";
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -43,6 +45,17 @@ const paragraphAction = action(async (q: string) => {
   **Grammar**
   **Spelling**
   **Improvements**
+    1.
+    2.
+    3.
+    4.
+    5.
+  **Improved Sentence**
+    1.
+    2.
+    3.
+    4.
+    5.
   `;
   const prompt = `Please analyze my sentence, provide an evaluation and spell check, and suggest an improved version.: ${q}`;
   const { textStream } = streamText({
@@ -109,11 +122,10 @@ const WordSearcher: Component<{
     let streamed = "";
     for await (const part of (await w(query)).stream) {
       streamed += part;
-      setAnswerByWordValue(streamed);
+      setAnswerByWordValue(marked.parse(streamed) as string);
     }
 
     batch(() => {
-      setAnswerByWordValue(marked.parse(streamed) as string);
       setWordValue("");
       setDisabled(false);
     });
@@ -165,10 +177,10 @@ const ParagraphWriting: Component<{
     let streamed = "";
     for await (const part of (await p(query)).stream) {
       streamed += part;
-      setAnswerByParagraphValue(streamed);
-    }
-    batch(() => {
       setAnswerByParagraphValue(marked.parse(streamed) as string);
+    }
+
+    batch(() => {
       setParagraphValue("");
       setDisabled(false);
     });
@@ -289,7 +301,7 @@ const Prose: Component<{
   return (
     <div
       innerHTML={s.text}
-      class="prose-block prose prose-slate prose-headings:font-semibold prose-h1:text-xl prose-h2:text-lg prose-p:text-inherit prose-strong:text-inherit prose-li:marker:text-amber-400"
+      class="prose-block prose prose-invert prose-headings:font-semibold prose-headings:text-inherit prose-h1:text-xl prose-h2:text-lg prose-p:text-inherit prose-li:text-inherit prose-strong:text-inherit prose-a:text-sky-300 prose-li:marker:text-amber-400"
     ></div>
   );
 };
