@@ -1,13 +1,18 @@
 import { mergeProps, Show, splitProps, type Component } from "solid-js";
 import "./Input.css";
 
-const Input: Component<{
-  isTextArea?: boolean;
+interface TInput {
   value: string;
   disabled?: boolean;
   placeholder?: string;
   setter: (s: string) => void;
-}> = (props) => {
+}
+
+const Input: Component<
+  {
+    isTextArea?: boolean;
+  } & TInput
+> = (props) => {
   const ps = mergeProps(
     {
       isTextArea: false,
@@ -24,12 +29,7 @@ const Input: Component<{
   );
 };
 
-const InputField: Component<{
-  value: string;
-  disabled?: boolean;
-  placeholder?: string;
-  setter: (s: string) => void;
-}> = (props) => {
+const InputField: Component<TInput> = (props) => {
   const [s, p] = splitProps(props, ["value", "placeholder"]);
 
   return (
@@ -46,12 +46,7 @@ const InputField: Component<{
   );
 };
 
-const TextArea: Component<{
-  value: string;
-  disabled?: boolean;
-  placeholder?: string;
-  setter: (s: string) => void;
-}> = (props) => {
+const TextArea: Component<TInput> = (props) => {
   const [s, p] = splitProps(props, ["value", "placeholder"]);
 
   return (

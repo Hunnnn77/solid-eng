@@ -9,9 +9,11 @@ import dedent from "dedent";
 import { marked } from "marked";
 import { deepseek } from "~/client/llm";
 import { Button } from "~/components/Button";
+import { fetchTranscript } from "youtube-transcript-plus";
 
 const wordAction = action(async (q: string) => {
   "use server";
+
   const system = dedent`
   Here is output format
 
@@ -38,6 +40,7 @@ const wordAction = action(async (q: string) => {
 
 const paragraphAction = action(async (q: string) => {
   "use server";
+
   const system = dedent`
   Here is output format
 
@@ -69,20 +72,64 @@ const paragraphAction = action(async (q: string) => {
   };
 }, "paragraph");
 
+const transcriptionAction = action(async (dialogValue: string) => {
+  "use server";
+
+  const transcription = await fetchTranscript(dialogValue, {
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
+  })
+    .then((r) => r.map((trans) => trans.text).join(" "))
+    .catch((e) => {
+      if (e instanceof Error) {
+        return e.message;
+      }
+      return "panic!";
+    });
+
+  return {
+    transcription,
+  };
+});
+
+const analyzeAction = action(async (transcription: string) => {
+  "use server";
+
+  const system = dedent`
+  **Brief Summary**
+  **Repetitive Words**
+  **Commonly used Sentences**
+  `;
+  const prompt = `Please analyze sentences, : ${transcription}`;
+  const { textStream } = streamText({
+    system,
+    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
+    prompt,
+  });
+
+  return {
+    stream: textStream,
+  };
+});
+
 export default function Home() {
+  const transcription = useAction(transcriptionAction);
+  const analyze = useAction(analyzeAction);
+  const word = useAction(wordAction);
+  const paragraph = useAction(paragraphAction);
+
   return (
     <div class="app-shell">
       <Title>English Studio</Title>
-      <AsideComponent />
-      <MainComponent />
+      <MainComponent word={word} paragraph={paragraph} />
+      <AsideComponent transcription={transcription} analyze={analyze} />
     </div>
   );
 }
 
-const MainComponent: Component = () => {
-  const word = useAction(wordAction);
-  const paragraph = useAction(paragraphAction);
-
+const MainComponent: Component<{
+  word: TAction<typeof wordAction>;
+  paragraph: TAction<typeof paragraphAction>;
+}> = ({ word, paragraph }) => {
   return (
     <main class="main-pane">
       <header class="hero-card panel-surface panel-border panel-shadow">
@@ -139,7 +186,7 @@ const WordSearcher: Component<{
           <h2>Search a word</h2>
         </div>
 
-        <Button disabled={disabled()} collect={collectWordStream} />
+        <Button disabled={disabled()} callback={collectWordStream} />
       </div>
 
       <Input
@@ -194,7 +241,7 @@ const ParagraphWriting: Component<{
           <h2>Polish a paragraph</h2>
         </div>
 
-        <Button disabled={disabled()} collect={collectParagraphStream} />
+        <Button disabled={disabled()} callback={collectParagraphStream} />
       </div>
 
       <Input
@@ -212,37 +259,76 @@ const ParagraphWriting: Component<{
   );
 };
 
-const AsideComponent: Component = () => {
+const AsideComponent: Component<{
+  transcription: TAction<typeof transcriptionAction>;
+  analyze: TAction<typeof analyzeAction>;
+}> = ({ transcription, analyze }) => {
   const [dialogEl, setDialogEl] = createSignal<HTMLDialogElement>();
 
-  const [dialogValue, setDialogValue] = createSignal("");
+  const [returnValue, setReturnValue] = createSignal("");
   const [url, setUrl] = createSignal("");
 
+  const [transcript, setTranscript] = createSignal("");
+  const [loading, setLoading] = createSignal(false);
+
   function open() {
-    setUrl("");
     dialogEl()?.showModal();
   }
 
   function close() {
     const dialog = dialogEl();
+
     if (!dialog) {
       return;
     }
-
-    if (url().trim().length > 0) {
-      dialog.close(url().trim());
+    if (url().trim().length === 0) {
+      dialog.close();
+      return;
+    }
+    if (returnValue().length > 0) {
+      dialog.close();
       return;
     }
 
-    dialog.close();
+    dialog.close(url().trim());
   }
 
   onMount(() => {
-    dialogEl()?.addEventListener("close", () => {
-      const dialog = dialogEl();
-      if (dialog?.returnValue && dialog.returnValue !== "default") {
-        setDialogValue(dialog.returnValue);
+    dialogEl()?.addEventListener("close", async () => {
+      if (url().trim().length === 0) {
+        return;
       }
+
+      setUrl("");
+      const dialog = dialogEl();
+
+      if (
+        !dialog ||
+        !dialog.returnValue ||
+        !dialog.returnValue.includes("?v=") ||
+        !dialog.returnValue.includes("youtube.com")
+      ) {
+        return;
+      }
+
+      setReturnValue(dialog.returnValue);
+
+      await transcription(returnValue()).then((r) => {
+        batch(() => {
+          setLoading(true);
+          let transcription = r.transcription.replaceAll("&gt;", ">");
+          transcription = transcription.replaceAll("&#39;", "'");
+
+          analyze(transcription).then(async (r) => {
+            let answer = "";
+            for await (const a of r.stream) {
+              answer += a;
+              setTranscript(marked.parse(answer) as string);
+            }
+            setLoading(false);
+          });
+        });
+      });
     });
   });
 
@@ -254,17 +340,21 @@ const AsideComponent: Component = () => {
         Save a YouTube URL here and keep your transcript source visible while writing.
       </p>
 
-      <button class="app-button" type="button" onclick={open}>
+      <Button disabled={loading()} callback={open}>
         Add YouTube URL
-      </button>
+      </Button>
 
-      <Show when={dialogValue().length > 0}>
+      <Show when={returnValue().length > 0}>
         <div class="saved-link">
           <p>Current source</p>
-          <a href={dialogValue()} target="_blank" rel="noreferrer">
-            {dialogValue()}
+          <a href={returnValue()} target="_blank" rel="noreferrer">
+            {returnValue()}
           </a>
         </div>
+      </Show>
+
+      <Show when={transcript().length > 0}>
+        <Prose text={transcript()}></Prose>
       </Show>
 
       <dialog class="app-dialog panel-surface panel-border" ref={setDialogEl}>
@@ -277,16 +367,7 @@ const AsideComponent: Component = () => {
           oninput={(e) => setUrl(e.target.value)}
         />
         <div class="dialog-actions">
-          <button
-            class="app-button app-button-muted"
-            type="button"
-            onclick={() => dialogEl()?.close()}
-          >
-            Cancel
-          </button>
-          <button class="app-button" type="button" onclick={close}>
-            Save
-          </button>
+          <Button callback={close}>save</Button>
         </div>
       </dialog>
     </aside>

@@ -1,13 +1,14 @@
-import type { Component } from "solid-js";
+import type { Component, JSXElement } from "solid-js";
 import "./Button.css";
 
 const Button: Component<{
   disabled?: boolean;
-  collect: () => Promise<void>;
+  callback: () => void | Promise<void>;
+  children?: JSXElement;
 }> = (props) => {
   return (
-    <button class="app-button" type="button" disabled={props.disabled} onclick={props.collect}>
-      {props.disabled ? "Working..." : "Submit"}
+    <button class="app-button" type="button" disabled={props.disabled} onclick={props.callback}>
+      {props.disabled ? "Working..." : props.children || "submit"}
     </button>
   );
 };
