@@ -17,125 +17,7 @@ import { Input } from "~/components/Input";
 import type { TAction } from "~/types";
 import { marked } from "marked";
 import { Button } from "~/components/Button";
-import { action } from "@solidjs/router";
-import { streamText } from "ai";
-import dedent from "dedent";
-import { deepseek } from "~/client/llm";
-import { fetchTranscript } from "youtube-transcript-plus";
-
-const wordAction = action(async (q: string) => {
-  "use server";
-
-  const system = dedent`
-  Here is output format
-
-  **Meaning**
-  **Part of Speech**
-  **Examples**
-    1.
-    2.
-    3.
-    4.
-    5.
-  `;
-  const prompt = `Please define the meaning and part of speech for this word, and provide five example sentences.: ${q}`;
-  const { textStream } = streamText({
-    system,
-    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
-    prompt,
-  });
-
-  return {
-    stream: textStream,
-  };
-}, "word");
-
-const paragraphAction = action(async (q: string) => {
-  "use server";
-
-  const system = dedent`
-  Here is output format
-
-  **Overral Analysis**
-  **Grammar**
-  **Spelling**
-  **Improvements**
-    1.
-    2.
-    3.
-    4.
-    5.
-  **Improved Sentence**
-    1.
-    2.
-    3.
-    4.
-    5.
-  `;
-  const prompt = `Please analyze my sentence, provide an evaluation and spell check, and suggest an improved version.: ${q}`;
-  const { textStream } = streamText({
-    system,
-    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
-    prompt,
-  });
-
-  return {
-    stream: textStream,
-  };
-}, "paragraph");
-
-const transcriptionAction = action(async (dialogValue: string) => {
-  "use server";
-
-  try {
-    const transcription = await fetchTranscript(dialogValue);
-    const result = transcription.map((tscript) => tscript.text).join(" ");
-    if (result.length === 0) {
-      return {
-        ok: false,
-        error: "empty response",
-      };
-    }
-
-    return {
-      ok: true,
-      result,
-    };
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      return {
-        ok: false,
-        error: e.message,
-      };
-    }
-    return {
-      ok: false,
-      error: "panic!",
-    };
-  }
-});
-
-const analyzeAction = action(async (transcription: string) => {
-  "use server";
-
-  const system = dedent`
-  Here is output format
-
-  **Brief Summary**
-  **Repetitive Words**
-  **Commonly used Sentences**
-  `;
-  const prompt = `Please analyze sentences: ${transcription}`;
-  const { textStream } = streamText({
-    system,
-    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
-    prompt,
-  });
-
-  return {
-    stream: textStream,
-  };
-});
+import { analyzeAction, paragraphAction, transcriptionAction, wordAction } from "~/actions";
 
 export default function Home() {
   const transcription = useAction(transcriptionAction);
@@ -301,8 +183,6 @@ const YoutubeComponent: Component<{
   const [error, setError] = createSignal("");
   const [loading, setLoading] = createSignal(false);
 
-  // https://www.youtube.com/watch?v=eTv3Iax_jVo
-  // https://m.youtube.com/watch?v=eTv3Iax_jVo&pp=ygUFSmltbXk%3D
   const youtubeId = createMemo(() => {
     let id = "";
     const u = url().split("?").slice(1).join("");
