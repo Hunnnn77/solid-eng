@@ -186,8 +186,8 @@ const YoutubeComponent: Component<{
     if (!u.includes("v")) return "";
     if (u.includes("&")) {
       const vParagraph = u.split("&").at(0);
-      if (!vParagraph) return "";
-      id = vParagraph.split("=").at(0) ?? "";
+      if (!vParagraph || !vParagraph.includes("v")) return "";
+      id = vParagraph.split("=").at(1) ?? "";
     } else {
       id = u.split("=").at(1) ?? "";
     }
