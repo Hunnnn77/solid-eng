@@ -4,6 +4,7 @@ import { useAction } from "@solidjs/router";
 import {
   batch,
   createComputed,
+  createMemo,
   createSignal,
   onMount,
   Show,
@@ -174,11 +175,24 @@ const YoutubeComponent: Component<{
 }> = ({ transcription, analyze }) => {
   const [dialogEl, setDialogEl] = createSignal<HTMLDialogElement>();
 
-  const [returnValue, setReturnValue] = createSignal("");
+  const [title, setTitle] = createSignal("");
   const [url, setUrl] = createSignal("");
-
   const [transcript, setTranscript] = createSignal("");
   const [loading, setLoading] = createSignal(false);
+
+  const youtubeId = createMemo(() => {
+    let id = "";
+    const u = url().split("?").slice(1).join("");
+    if (!u.includes("v")) return "";
+    if (u.includes("&")) {
+      const vParagraph = u.split("&").at(0);
+      if (!vParagraph) return "";
+      id = vParagraph.split("=").at(0) ?? "";
+    } else {
+      id = u.split("=").at(1) ?? "";
+    }
+    return id;
+  });
 
   function open() {
     dialogEl()?.showModal();
@@ -186,6 +200,7 @@ const YoutubeComponent: Component<{
 
   function close() {
     dialogEl()?.close();
+    setUrl("");
   }
 
   function save() {
@@ -194,39 +209,25 @@ const YoutubeComponent: Component<{
     if (!dialog) {
       return;
     }
-    if (url().trim().length === 0) {
-      dialog.close();
-      return;
-    }
-    if (returnValue().length > 0) {
+    if (youtubeId().length === 0) {
       dialog.close();
       return;
     }
 
-    dialog.close(url().trim());
+    dialog.close(youtubeId());
   }
 
   onMount(() => {
     dialogEl()?.addEventListener("close", async () => {
-      if (url().trim().length === 0) {
-        return;
-      }
-
-      setUrl("");
       const dialog = dialogEl();
+      if (!dialog || !dialog.returnValue) return;
 
-      if (
-        !dialog ||
-        !dialog.returnValue ||
-        !dialog.returnValue.includes("?v=") ||
-        !dialog.returnValue.includes("youtube.com")
-      ) {
-        return;
-      }
+      batch(() => {
+        setTitle(`https://www.youtube.com/watch?v=${youtubeId()}`);
+        setUrl("");
+      });
 
-      setReturnValue(dialog.returnValue);
-
-      await transcription(returnValue()).then((r) => {
+      await transcription(dialog.returnValue).then((r) => {
         batch(() => {
           setLoading(true);
           let transcription = r.transcription.replaceAll("&gt;", ">");
@@ -257,11 +258,11 @@ const YoutubeComponent: Component<{
         Add YouTube URL
       </Button>
 
-      <Show when={returnValue().length > 0}>
+      <Show when={title().length > 0}>
         <div class="saved-link">
           <p>Current source</p>
-          <a href={returnValue()} target="_blank" rel="noreferrer">
-            {returnValue()}
+          <a href={title()} target="_blank" rel="noreferrer">
+            {title()}
           </a>
         </div>
       </Show>

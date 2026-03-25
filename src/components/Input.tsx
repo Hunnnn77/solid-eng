@@ -1,11 +1,11 @@
 import "./Input.css";
-import { mergeProps, Show, splitProps, type Component } from "solid-js";
+import { mergeProps, Show, splitProps, type Component, type Setter } from "solid-js";
 
 interface TInput {
   value: string;
   disabled?: boolean;
   placeholder?: string;
-  setter: (s: string) => void;
+  setter: Setter<string>;
 }
 
 const Input: Component<
