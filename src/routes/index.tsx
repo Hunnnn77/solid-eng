@@ -1,115 +1,12 @@
 import { Title } from "@solidjs/meta";
-import { action, useAction } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { batch, createSignal, onMount, Show, splitProps, type Component } from "solid-js";
 import "./index.css";
 import { Input } from "~/components/Input";
 import type { TAction } from "~/types";
-import { streamText } from "ai";
-import dedent from "dedent";
 import { marked } from "marked";
-import { deepseek } from "~/client/llm";
 import { Button } from "~/components/Button";
-import { fetchTranscript } from "youtube-transcript-plus";
-
-const wordAction = action(async (q: string) => {
-  "use server";
-
-  const system = dedent`
-  Here is output format
-
-  **Meaning**
-  **Part of Speech**
-  **Examples**
-    1.
-    2.
-    3.
-    4.
-    5.
-  `;
-  const prompt = `Please define the meaning and part of speech for this word, and provide five example sentences.: ${q}`;
-  const { textStream } = streamText({
-    system,
-    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
-    prompt,
-  });
-
-  return {
-    stream: textStream,
-  };
-}, "word");
-
-const paragraphAction = action(async (q: string) => {
-  "use server";
-
-  const system = dedent`
-  Here is output format
-
-  **Overral Analysis**
-  **Grammar**
-  **Spelling**
-  **Improvements**
-    1.
-    2.
-    3.
-    4.
-    5.
-  **Improved Sentence**
-    1.
-    2.
-    3.
-    4.
-    5.
-  `;
-  const prompt = `Please analyze my sentence, provide an evaluation and spell check, and suggest an improved version.: ${q}`;
-  const { textStream } = streamText({
-    system,
-    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
-    prompt,
-  });
-
-  return {
-    stream: textStream,
-  };
-}, "paragraph");
-
-const transcriptionAction = action(async (dialogValue: string) => {
-  "use server";
-
-  const transcription = await fetchTranscript(dialogValue, {
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
-  })
-    .then((r) => r.map((trans) => trans.text).join(" "))
-    .catch((e) => {
-      if (e instanceof Error) {
-        return e.message;
-      }
-      return "panic!";
-    });
-
-  return {
-    transcription,
-  };
-});
-
-const analyzeAction = action(async (transcription: string) => {
-  "use server";
-
-  const system = dedent`
-  **Brief Summary**
-  **Repetitive Words**
-  **Commonly used Sentences**
-  `;
-  const prompt = `Please analyze sentences, : ${transcription}`;
-  const { textStream } = streamText({
-    system,
-    model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
-    prompt,
-  });
-
-  return {
-    stream: textStream,
-  };
-});
+import { analyzeAction, paragraphAction, transcriptionAction, wordAction } from "~/actions";
 
 export default function Home() {
   const transcription = useAction(transcriptionAction);
@@ -120,15 +17,15 @@ export default function Home() {
   return (
     <div class="app-shell">
       <Title>English Studio</Title>
-      <MainComponent word={word} paragraph={paragraph} />
-      <AsideComponent transcription={transcription} analyze={analyze} />
+      <LangComponent word={word} paragraph={paragraph} />
+      <YoutubeComponent transcription={transcription} analyze={analyze} />
     </div>
   );
 }
 
-const MainComponent: Component<{
-  word: TAction<typeof wordAction>;
-  paragraph: TAction<typeof paragraphAction>;
+const LangComponent: Component<{
+  word: TAction<string, typeof wordAction>;
+  paragraph: TAction<string, typeof paragraphAction>;
 }> = ({ word, paragraph }) => {
   return (
     <main class="main-pane">
@@ -149,7 +46,7 @@ const MainComponent: Component<{
 };
 
 const WordSearcher: Component<{
-  word: TAction<typeof wordAction>;
+  word: TAction<string, typeof wordAction>;
 }> = ({ word: w }) => {
   const [disabled, setDisabled] = createSignal(false);
   const [wordValue, setWordValue] = createSignal("");
@@ -166,8 +63,10 @@ const WordSearcher: Component<{
       setAnswerByWordValue("");
     });
 
+    const stream = (await w(query)).stream;
     let streamed = "";
-    for await (const part of (await w(query)).stream) {
+
+    for await (const part of stream) {
       streamed += part;
       setAnswerByWordValue(marked.parse(streamed) as string);
     }
@@ -204,7 +103,7 @@ const WordSearcher: Component<{
 };
 
 const ParagraphWriting: Component<{
-  paragraph: TAction<typeof paragraphAction>;
+  paragraph: TAction<string, typeof paragraphAction>;
 }> = ({ paragraph: p }) => {
   const [disabled, setDisabled] = createSignal(false);
   const [paragraphValue, setParagraphValue] = createSignal("");
@@ -221,8 +120,10 @@ const ParagraphWriting: Component<{
       setAnswerByParagraphValue("");
     });
 
+    const stream = (await p(query)).stream;
     let streamed = "";
-    for await (const part of (await p(query)).stream) {
+
+    for await (const part of stream) {
       streamed += part;
       setAnswerByParagraphValue(marked.parse(streamed) as string);
     }
@@ -259,9 +160,9 @@ const ParagraphWriting: Component<{
   );
 };
 
-const AsideComponent: Component<{
-  transcription: TAction<typeof transcriptionAction>;
-  analyze: TAction<typeof analyzeAction>;
+const YoutubeComponent: Component<{
+  transcription: TAction<string, typeof transcriptionAction>;
+  analyze: TAction<string, typeof analyzeAction>;
 }> = ({ transcription, analyze }) => {
   const [dialogEl, setDialogEl] = createSignal<HTMLDialogElement>();
 
@@ -276,6 +177,10 @@ const AsideComponent: Component<{
   }
 
   function close() {
+    dialogEl()?.close();
+  }
+
+  function save() {
     const dialog = dialogEl();
 
     if (!dialog) {
@@ -367,7 +272,8 @@ const AsideComponent: Component<{
           oninput={(e) => setUrl(e.target.value)}
         />
         <div class="dialog-actions">
-          <Button callback={close}>save</Button>
+          <Button callback={close}>close</Button>
+          <Button callback={save}>save</Button>
         </div>
       </dialog>
     </aside>
