@@ -349,18 +349,23 @@ const YoutubeComponent: Component<{
 
       batch(() => {
         setTitle(`https://www.youtube.com/watch?v=${youtubeId()}`);
-        setUrl("");
         setLoading(true);
       });
 
-      const resp = await transcription(title());
+      const resp = await transcription(youtubeId());
       if (!resp.ok && resp.error) {
-        setError(resp.error);
+        batch(() => {
+          setError(resp.error);
+          setLoading(false);
+        });
         return;
       }
 
       if (!resp.result) {
-        setError("empty response");
+        batch(() => {
+          setError("empty response");
+          setLoading(false);
+        });
         return;
       }
 
@@ -374,7 +379,10 @@ const YoutubeComponent: Component<{
         setTranscript(answer);
       }
 
-      setLoading(false);
+      batch(() => {
+        setLoading(false);
+        setUrl("");
+      });
     });
   });
 
