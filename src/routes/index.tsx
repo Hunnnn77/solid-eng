@@ -287,7 +287,7 @@ const YoutubeComponent: Component<{
   const [loading, setLoading] = createSignal(false);
 
   // https://www.youtube.com/watch?v=eTv3Iax_jVo
-  // https://m.youtube.com/watch?v=DzuA9KqTl2w&pp=ygUFSmltbXk%3D
+  // https://m.youtube.com/watch?v=eTv3Iax_jVo&pp=ygUFSmltbXk%3D
   const youtubeId = createMemo(() => {
     let id = "";
     const u = url().split("?").slice(1).join("");
@@ -314,7 +314,11 @@ const YoutubeComponent: Component<{
   function save() {
     const dialog = dialogEl();
 
-    if (!dialog) {
+    if (!dialog) return;
+
+    if (!url().includes("youtube") && !url().includes("v")) {
+      dialog?.close();
+      setUrl("");
       return;
     }
 
