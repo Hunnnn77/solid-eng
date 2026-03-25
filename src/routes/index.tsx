@@ -337,22 +337,20 @@ const YoutubeComponent: Component<{
         setUrl("");
       });
 
-      await transcription(title()).then((r) => {
-        batch(() => {
-          setLoading(true);
-          let transcription = r.transcription.replaceAll("&gt;", ">");
-          transcription = transcription.replaceAll("&#39;", "'");
+      setLoading(true);
 
-          analyze(transcription).then(async (r) => {
-            let answer = "";
-            for await (const a of r.stream) {
-              answer += a;
-              setTranscript(answer);
-            }
-            setLoading(false);
-          });
-        });
-      });
+      const t = await transcription(title());
+      let text = t.transcription.replaceAll("&gt;", ">");
+      text = text.replaceAll("&#39;", "'");
+
+      const stream = (await analyze(text)).stream;
+      let answer = "";
+      for await (const a of stream) {
+        answer += a;
+        setTranscript(answer);
+      }
+
+      setLoading(false);
     });
   });
 
