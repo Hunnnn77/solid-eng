@@ -2,13 +2,6 @@ import { action } from "@solidjs/router";
 import { streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
-import {
-  fetchTranscript,
-  YoutubeTranscriptDisabledError,
-  YoutubeTranscriptNotAvailableError,
-  YoutubeTranscriptNotAvailableLanguageError,
-  YoutubeTranscriptVideoUnavailableError,
-} from "youtube-transcript-plus";
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -75,7 +68,7 @@ const transcriptionAction = action(async (dialogValue: string) => {
   "use server";
 
   const resp: { error: string } | { result: string } = await fetch(
-    `${import.meta.env.DEV ? "http://localhost:3000" : "https://solid-eng.vercel.app"}/api/transcription`,
+    `${import.meta.env.DEV ? "http://localhost:3000" : `${import.meta.env.PROD}`}/api/transcription`,
     {
       method: "POST",
       headers: {
@@ -93,7 +86,6 @@ const transcriptionAction = action(async (dialogValue: string) => {
       error: resp.error,
     };
   }
-
   return {
     ok: true,
     result: resp.result,
