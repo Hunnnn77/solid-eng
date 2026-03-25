@@ -180,6 +180,8 @@ const YoutubeComponent: Component<{
   const [transcript, setTranscript] = createSignal("");
   const [loading, setLoading] = createSignal(false);
 
+  // https://www.youtube.com/watch?v=eTv3Iax_jVo
+  // https://m.youtube.com/watch?v=DzuA9KqTl2w&pp=ygUFSmltbXk%3D
   const youtubeId = createMemo(() => {
     let id = "";
     const u = url().split("?").slice(1).join("");
@@ -191,7 +193,7 @@ const YoutubeComponent: Component<{
     } else {
       id = u.split("=").at(1) ?? "";
     }
-    return id;
+    return id.trim();
   });
 
   function open() {
@@ -277,7 +279,7 @@ const YoutubeComponent: Component<{
           class="field-input"
           value={url()}
           type="url"
-          placeholder="https://youtube.com/watch?v=..."
+          placeholder="https://youtube.com/watch?v=VIDEO_ID"
           oninput={(e) => setUrl(e.target.value)}
         />
         <div class="dialog-actions">
