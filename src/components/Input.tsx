@@ -1,5 +1,5 @@
-import { mergeProps, Show, splitProps, type Component } from "solid-js";
 import "./Input.css";
+import { mergeProps, Show, splitProps, type Component } from "solid-js";
 
 interface TInput {
   value: string;
@@ -20,26 +20,27 @@ const Input: Component<
     },
     props,
   );
-  const [is, p] = splitProps(ps, ["isTextArea"]);
+  const [s, p] = splitProps(ps, ["isTextArea"]);
 
   return (
-    <Show when={is.isTextArea} fallback={<InputField {...p} />}>
+    <Show when={s.isTextArea} fallback={<InputField {...p} />}>
       <TextArea {...p} />
     </Show>
   );
 };
 
 const InputField: Component<TInput> = (props) => {
-  const [s, p] = splitProps(props, ["value", "placeholder"]);
+  const [s, p] = splitProps(props, ["disabled", "value"]);
+  const mp = mergeProps({ disabled: false }, s);
 
   return (
     <div class="input-row">
       <input
         class="field-input"
-        disabled={p.disabled}
+        disabled={mp.disabled}
         value={s.value}
         type="text"
-        placeholder={s.placeholder}
+        placeholder={p.placeholder}
         oninput={(e) => p.setter(e.target.value)}
       />
     </div>
@@ -47,15 +48,16 @@ const InputField: Component<TInput> = (props) => {
 };
 
 const TextArea: Component<TInput> = (props) => {
-  const [s, p] = splitProps(props, ["value", "placeholder"]);
+  const [s, p] = splitProps(props, ["disabled", "value"]);
+  const mp = mergeProps({ disabled: false }, s);
 
   return (
     <div class="input-row input-row-stack">
       <textarea
         class="field-input field-textarea"
-        disabled={p.disabled}
+        disabled={mp.disabled}
         value={s.value}
-        placeholder={s.placeholder}
+        placeholder={p.placeholder}
         oninput={(e) => p.setter(e.target.value)}
       />
     </div>

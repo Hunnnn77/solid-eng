@@ -1,7 +1,15 @@
+import "./index.css";
 import { Title } from "@solidjs/meta";
 import { useAction } from "@solidjs/router";
-import { batch, createSignal, onMount, Show, splitProps, type Component } from "solid-js";
-import "./index.css";
+import {
+  batch,
+  createComputed,
+  createSignal,
+  onMount,
+  Show,
+  splitProps,
+  type Component,
+} from "solid-js";
 import { Input } from "~/components/Input";
 import type { TAction } from "~/types";
 import { marked } from "marked";
@@ -68,7 +76,7 @@ const WordSearcher: Component<{
 
     for await (const part of stream) {
       streamed += part;
-      setAnswerByWordValue(marked.parse(streamed) as string);
+      setAnswerByWordValue(streamed);
     }
 
     batch(() => {
@@ -125,7 +133,7 @@ const ParagraphWriting: Component<{
 
     for await (const part of stream) {
       streamed += part;
-      setAnswerByParagraphValue(marked.parse(streamed) as string);
+      setAnswerByParagraphValue(streamed);
     }
 
     batch(() => {
@@ -228,7 +236,7 @@ const YoutubeComponent: Component<{
             let answer = "";
             for await (const a of r.stream) {
               answer += a;
-              setTranscript(marked.parse(answer) as string);
+              setTranscript(answer);
             }
             setLoading(false);
           });
@@ -284,10 +292,15 @@ const Prose: Component<{
   text: string;
 }> = (props) => {
   const [s] = splitProps(props, ["text"]);
+  const [markdowned, setMarkdowned] = createSignal("");
+
+  createComputed(() => {
+    setMarkdowned(marked.parse(s.text) as string);
+  });
 
   return (
     <div
-      innerHTML={s.text}
+      innerHTML={markdowned()}
       class="prose-block prose prose-invert prose-headings:font-semibold prose-headings:text-inherit prose-h1:text-xl prose-h2:text-lg prose-p:text-inherit prose-li:text-inherit prose-strong:text-inherit prose-a:text-sky-300 prose-li:marker:text-amber-400"
     ></div>
   );
