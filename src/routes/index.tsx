@@ -6,9 +6,11 @@ import {
   createComputed,
   createMemo,
   createSignal,
+  Match,
   onMount,
   Show,
   splitProps,
+  Switch,
   type Component,
 } from "solid-js";
 import { Input } from "~/components/Input";
@@ -85,20 +87,32 @@ const paragraphAction = action(async (q: string) => {
 const transcriptionAction = action(async (dialogValue: string) => {
   "use server";
 
-  const transcription = await fetchTranscript(dialogValue, {
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
-  })
-    .then((r) => r.map((trans) => trans.text).join(" "))
-    .catch((e) => {
-      if (e instanceof Error) {
-        return e.message;
-      }
-      return "panic!";
-    });
+  try {
+    const transcription = await fetchTranscript(dialogValue);
+    const result = transcription.map((tscript) => tscript.text).join(" ");
+    if (result.length === 0) {
+      return {
+        ok: false,
+        error: "empty response",
+      };
+    }
 
-  return {
-    transcription,
-  };
+    return {
+      ok: true,
+      result,
+    };
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      return {
+        ok: false,
+        error: e.message,
+      };
+    }
+    return {
+      ok: false,
+      error: "panic!",
+    };
+  }
 });
 
 const analyzeAction = action(async (transcription: string) => {
@@ -284,6 +298,7 @@ const YoutubeComponent: Component<{
   const [title, setTitle] = createSignal("");
   const [url, setUrl] = createSignal("");
   const [transcript, setTranscript] = createSignal("");
+  const [error, setError] = createSignal("");
   const [loading, setLoading] = createSignal(false);
 
   // https://www.youtube.com/watch?v=eTv3Iax_jVo
@@ -335,12 +350,21 @@ const YoutubeComponent: Component<{
       batch(() => {
         setTitle(`https://www.youtube.com/watch?v=${youtubeId()}`);
         setUrl("");
+        setLoading(true);
       });
 
-      setLoading(true);
+      const resp = await transcription(title());
+      if (!resp.ok && resp.error) {
+        setError(resp.error);
+        return;
+      }
 
-      const t = await transcription(title());
-      let text = t.transcription.replaceAll("&gt;", ">");
+      if (!resp.result) {
+        setError("empty response");
+        return;
+      }
+
+      let text = resp.result.replaceAll("&gt;", ">");
       text = text.replaceAll("&#39;", "'");
 
       const stream = (await analyze(text)).stream;
@@ -375,9 +399,14 @@ const YoutubeComponent: Component<{
         </div>
       </Show>
 
-      <Show when={transcript().length > 0}>
-        <Prose text={transcript()}></Prose>
-      </Show>
+      <Switch>
+        <Match when={error().length > 0}>
+          <Prose text={error()}></Prose>
+        </Match>
+        <Match when={transcript().length > 0}>
+          <Prose text={transcript()}></Prose>
+        </Match>
+      </Switch>
 
       <dialog class="app-dialog panel-surface panel-border" ref={setDialogEl}>
         <h3>Video URL</h3>
