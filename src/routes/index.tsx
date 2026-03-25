@@ -227,6 +227,11 @@ const YoutubeComponent: Component<{
 
       if (url().length === 0) return;
 
+      const clean = () => {
+        setUrl("");
+        setLoading(false);
+      };
+
       batch(() => {
         setTitle(`https://www.youtube.com/watch?v=${youtubeId()}`);
         setLoading(true);
@@ -236,7 +241,7 @@ const YoutubeComponent: Component<{
       if (!resp.ok && resp.error) {
         batch(() => {
           setError(resp.error);
-          setLoading(false);
+          clean();
         });
         return;
       }
@@ -244,7 +249,7 @@ const YoutubeComponent: Component<{
       if (!resp.result) {
         batch(() => {
           setError("empty response");
-          setLoading(false);
+          clean();
         });
         return;
       }

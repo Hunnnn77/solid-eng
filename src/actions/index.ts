@@ -74,56 +74,30 @@ const paragraphAction = action(async (q: string) => {
 const transcriptionAction = action(async (dialogValue: string) => {
   "use server";
 
-  try {
-    const transcription = await fetchTranscript(dialogValue, {
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
-    });
-    const result = transcription.map((tscript) => tscript.text).join(" ");
-    if (result.length === 0) {
-      return {
-        ok: false,
-        error: "no response",
-      };
-    }
+  const resp: { error: string } | { result: string } = await fetch(
+    `${import.meta.env.DEV ? "http://localhost:3000" : "https://solid-eng.vercel.app"}/api/transcription`,
+    {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        q: dialogValue,
+      }),
+    },
+  ).then((r) => r.json());
 
-    return {
-      ok: true,
-      result,
-    };
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      if (e instanceof YoutubeTranscriptVideoUnavailableError) {
-        return {
-          ok: false,
-          error: `Video is unavailable ${e.videoId}`,
-        };
-      } else if (e instanceof YoutubeTranscriptDisabledError) {
-        return {
-          ok: false,
-          error: `Transcripts are disabled: ${e.videoId}`,
-        };
-      } else if (e instanceof YoutubeTranscriptNotAvailableError) {
-        return {
-          ok: false,
-          error: `No transcript available: ${e.videoId}`,
-        };
-      } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
-        return {
-          ok: false,
-          error: `Language not available ${e.lang}, ${e.availableLangs}`,
-        };
-      } else {
-        return {
-          ok: false,
-          error: `An unexpected error occurred: ${e.message}`,
-        };
-      }
-    }
+  if ("error" in resp) {
     return {
       ok: false,
-      error: "panic!",
+      error: resp.error,
     };
   }
+
+  return {
+    ok: true,
+    result: resp.result,
+  };
 });
 
 const analyzeAction = action(async (transcription: string) => {
