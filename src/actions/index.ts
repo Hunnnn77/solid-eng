@@ -88,11 +88,13 @@ const analyzeAction = action(async (transcription: string) => {
   "use server";
 
   const system = dedent`
+  Here is output format
+
   **Brief Summary**
   **Repetitive Words**
   **Commonly used Sentences**
   `;
-  const prompt = `Please analyze sentences, : ${transcription}`;
+  const prompt = `Please analyze sentences: ${transcription}`;
   const { textStream } = streamText({
     system,
     model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),

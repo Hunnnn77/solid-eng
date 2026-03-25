@@ -211,10 +211,6 @@ const YoutubeComponent: Component<{
     if (!dialog) {
       return;
     }
-    if (youtubeId().length === 0) {
-      dialog.close();
-      return;
-    }
 
     dialog.close(youtubeId());
   }
@@ -224,12 +220,14 @@ const YoutubeComponent: Component<{
       const dialog = dialogEl();
       if (!dialog || !dialog.returnValue) return;
 
+      if (url().length === 0) return;
+
       batch(() => {
         setTitle(`https://www.youtube.com/watch?v=${youtubeId()}`);
         setUrl("");
       });
 
-      await transcription(dialog.returnValue).then((r) => {
+      await transcription(title()).then((r) => {
         batch(() => {
           setLoading(true);
           let transcription = r.transcription.replaceAll("&gt;", ">");
