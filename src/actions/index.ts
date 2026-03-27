@@ -1,15 +1,14 @@
 import { action } from "@solidjs/router";
 import { streamText } from "ai";
-import type { error } from "console";
 import dedent from "dedent";
-import {
-  fetchTranscript,
-  YoutubeTranscriptDisabledError,
-  YoutubeTranscriptNotAvailableError,
-  YoutubeTranscriptNotAvailableLanguageError,
-  YoutubeTranscriptVideoUnavailableError,
-} from "youtube-transcript-plus";
 import { deepseek } from "~/client/llm";
+import {
+  IpBlocked,
+  NoTranscriptFound,
+  TranscriptsDisabled,
+  VideoUnavailable,
+  YouTubeTranscriptApi,
+} from "@playzone/youtube-transcript";
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -75,26 +74,27 @@ const paragraphAction = action(async (q: string) => {
 const transcriptionAction = action(async (id: string) => {
   "use server";
 
+  const api = new YouTubeTranscriptApi();
+
   try {
-    const result = (await fetchTranscript(id)).map((e) => e.text).join(" ");
+    const contents = await api.fetch(id);
+    const text = contents.snippets.map((sn) => sn.text).join(" ");
     return {
-      result,
+      result: text,
     };
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      if (e instanceof YoutubeTranscriptVideoUnavailableError) {
-        return { error: `Video is unavailable: ${e.videoId}` };
-      } else if (e instanceof YoutubeTranscriptDisabledError) {
-        return { error: `Transcripts are disabled: ${e.videoId}` };
-      } else if (e instanceof YoutubeTranscriptNotAvailableError) {
-        return { error: `No transcript available: ${e.videoId}` };
-      } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
-        return { error: `Language not available: ${e.lang} ${e.availableLangs}` };
-      } else {
-        return { error: `An unexpected error occurred: ${e.message}` };
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error instanceof NoTranscriptFound) {
+        return { error: "No transcript found for this video" };
+      } else if (error instanceof VideoUnavailable) {
+        return { error: "Video is unavailable" };
+      } else if (error instanceof TranscriptsDisabled) {
+        return { error: "Transcripts are disabled for this video" };
+      } else if (error instanceof IpBlocked) {
+        return { error: "IP address is blocked, try using a proxy" };
       }
+      return { error: error.message };
     }
-    return { error: `PANIC!` };
   }
 });
 

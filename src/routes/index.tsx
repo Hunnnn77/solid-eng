@@ -236,7 +236,7 @@ const YoutubeComponent: Component<{
       });
 
       const resp = await transcription(youtubeId());
-      if (resp.error) {
+      if (resp?.error) {
         batch(() => {
           setError(resp.error);
           clean();
@@ -244,7 +244,7 @@ const YoutubeComponent: Component<{
         return;
       }
 
-      let text = resp.result?.replaceAll("&gt;", ">");
+      let text = resp?.result?.replaceAll("&gt;", ">");
       text = (text ?? "").replaceAll("&#39;", "'");
 
       const stream = (await analyze(text)).stream;
