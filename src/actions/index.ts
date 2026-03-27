@@ -70,7 +70,7 @@ const transcriptionAction = action(async (id: string) => {
   "use server";
 
   const resp: TResp = await fetch(
-    `${process.env.PROD ? process.env.PROD : "http://localhost:3000"}/api/transcription`,
+    `${!import.meta.env ? "" : "http://localhost:3000"}/api/transcription`,
     {
       method: "POST",
       headers: {
@@ -80,16 +80,7 @@ const transcriptionAction = action(async (id: string) => {
         id,
       }),
     },
-  )
-    .then((r) => r.json())
-    .catch((e) => {
-      if (e instanceof Error) {
-        return {
-          ok: false,
-          error: `ERROR: ${e.message}`,
-        };
-      }
-    });
+  ).then((r) => r.json());
 
   if ("error" in resp) {
     return {
