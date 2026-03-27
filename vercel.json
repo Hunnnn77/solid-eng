@@ -1,8 +1,1 @@
-{
-    "rewrites": [
-        {
-            "source": "/api/:path*",
-            "destination": "https://solid-eng.vercel.app/api/:path*"
-        }
-    ]
-}
+{}
