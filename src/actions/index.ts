@@ -3,7 +3,7 @@ import { streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
 
-type TResp = { error: string } | { result: string };
+type TResp = { error: string } | { ok: string };
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -91,7 +91,7 @@ const transcriptionAction = action(async (id: string) => {
     }
     return {
       ok: true,
-      result: resp.result,
+      result: resp.ok,
     };
   } catch (e: unknown) {
     if (e instanceof Error) {

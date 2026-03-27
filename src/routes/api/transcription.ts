@@ -27,7 +27,7 @@ export async function POST({ request }: APIEvent) {
       );
     }
     return json({
-      result: script,
+      ok: script,
     });
   } catch (error: unknown) {
     if (error instanceof Error) {
