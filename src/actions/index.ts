@@ -86,7 +86,7 @@ const transcriptionAction = action(async (id: string) => {
       if (e instanceof Error) {
         return {
           ok: false,
-          error: e.message,
+          error: `ERR_${e.message}`,
         };
       }
     });
@@ -94,7 +94,7 @@ const transcriptionAction = action(async (id: string) => {
   if ("error" in resp) {
     return {
       ok: false,
-      error: resp.error,
+      error: `YOUTUBE_ERR ${resp.error}`,
     };
   }
   return {
