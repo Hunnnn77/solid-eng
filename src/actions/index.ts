@@ -70,7 +70,7 @@ const transcriptionAction = action(async (id: string) => {
   "use server";
 
   const resp: TResp = await fetch(
-    `${import.meta.env ? "http://localhost:3000" : ""}/api/transcription`,
+    `${import.meta.env ? "http://localhost:3000" : process.env.PROD}/api/transcription`,
     {
       method: "POST",
       headers: {
