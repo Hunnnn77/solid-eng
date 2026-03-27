@@ -66,7 +66,7 @@ const paragraphAction = action(async (q: string) => {
   };
 }, "paragraph");
 
-const transcriptionAction = action(async (dialogValue: string) => {
+const transcriptionAction = action(async (id: string) => {
   "use server";
 
   const resp: TResp = await fetch(
@@ -77,7 +77,7 @@ const transcriptionAction = action(async (dialogValue: string) => {
         "Content-type": "application/json",
       },
       body: JSON.stringify({
-        q: dialogValue,
+        id: id.trim(),
       }),
     },
   )

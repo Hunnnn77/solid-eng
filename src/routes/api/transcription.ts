@@ -1,26 +1,20 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { json } from "@solidjs/router";
-import {
-  fetchTranscript,
-  YoutubeTranscriptDisabledError,
-  YoutubeTranscriptNotAvailableError,
-  YoutubeTranscriptNotAvailableLanguageError,
-  YoutubeTranscriptVideoUnavailableError,
-} from "youtube-transcript-plus";
+import { YouTubeTranscriptApi } from "youtube-transcript-api-js";
 
 interface TranscriptionBody {
-  q: string;
+  id: string;
 }
 
 export async function POST({ request }: APIEvent) {
-  const { q }: TranscriptionBody = await request.json();
+  const { id }: TranscriptionBody = await request.json();
+  const api = new YouTubeTranscriptApi();
 
   try {
-    const transcription = await fetchTranscript(q, {
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
-    }).then((ts) => ts.map((t) => t.text).join(" "));
+    const info = await api.fetch(id);
+    const transcriptData = info.snippets.map((e) => e.text).join(" ");
 
-    if (transcription.length === 0) {
+    if (transcriptData.length === 0) {
       return json(
         {
           error: "no response",
@@ -30,46 +24,13 @@ export async function POST({ request }: APIEvent) {
     }
 
     return json({
-      result: transcription,
+      result: transcriptData,
     });
   } catch (e: unknown) {
     if (e instanceof Error) {
-      if (e instanceof YoutubeTranscriptVideoUnavailableError) {
-        return json(
-          {
-            error: `Video is unavailable ${e.videoId}`,
-          },
-          { status: 400 },
-        );
-      } else if (e instanceof YoutubeTranscriptDisabledError) {
-        return json(
-          {
-            error: `Transcripts are disabled: ${e.videoId}`,
-          },
-          { status: 400 },
-        );
-      } else if (e instanceof YoutubeTranscriptNotAvailableError) {
-        return json(
-          {
-            error: `No transcript available: ${e.videoId}`,
-          },
-          { status: 400 },
-        );
-      } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
-        return json(
-          {
-            error: `Language not available ${e.lang}, ${e.availableLangs}`,
-          },
-          { status: 400 },
-        );
-      } else {
-        return json(
-          {
-            error: `An unexpected error occurred: ${e.message}`,
-          },
-          { status: 400 },
-        );
-      }
+      return json({
+        error: `ERROR_${e.message}`,
+      });
     }
   }
 }

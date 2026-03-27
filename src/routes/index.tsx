@@ -18,6 +18,7 @@ import type { TAction } from "~/types";
 import { marked } from "marked";
 import { Button } from "~/components/Button";
 import { analyzeAction, paragraphAction, transcriptionAction, wordAction } from "~/actions";
+import { getYoutubeUrl } from "~/utils";
 
 export default function Home() {
   const transcription = useAction(transcriptionAction);
@@ -29,9 +30,9 @@ export default function Home() {
     <div class="app-shell">
       <Title>English Studio</Title>
       <main class="main-pane">
+        <Header />
         <div class="tool-grid">
           <div class="left-section">
-            <Header />
             <WordSearcher word={word} />
             <ParagraphWriting paragraph={paragraph} />
           </div>
@@ -230,7 +231,7 @@ const YoutubeComponent: Component<{
       };
 
       batch(() => {
-        setTitle(`https://www.youtube.com/watch?v=${youtubeId()}`);
+        setTitle(getYoutubeUrl(youtubeId()));
         setLoading(true);
       });
 
