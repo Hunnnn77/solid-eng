@@ -28,33 +28,30 @@ export default function Home() {
   return (
     <div class="app-shell">
       <Title>English Studio</Title>
-      <LangComponent word={word} paragraph={paragraph} />
-      <YoutubeComponent transcription={transcription} analyze={analyze} />
+      <main class="main-pane">
+        <div class="tool-grid">
+          <div class="left-section">
+            <Header />
+            <WordSearcher word={word} />
+            <ParagraphWriting paragraph={paragraph} />
+          </div>
+
+          <YoutubeComponent transcription={transcription} analyze={analyze} />
+        </div>
+      </main>
     </div>
   );
 }
 
-const LangComponent: Component<{
-  word: TAction<string, typeof wordAction>;
-  paragraph: TAction<string, typeof paragraphAction>;
-}> = ({ word, paragraph }) => {
-  return (
-    <main class="main-pane">
-      <header class="hero-card panel-surface panel-border panel-shadow">
-        <p class="eyebrow">Writing companion</p>
-        <h1 class="hero-title">English Studio</h1>
-        <p class="hero-subtitle">
-          Look up precise meanings and improve entire paragraphs with guided AI feedback.
-        </p>
-      </header>
-
-      <div class="tool-grid">
-        <WordSearcher word={word} />
-        <ParagraphWriting paragraph={paragraph} />
-      </div>
-    </main>
-  );
-};
+const Header: Component = () => (
+  <header class="hero-card panel-surface panel-border panel-shadow">
+    <p class="eyebrow">Writing companion</p>
+    <h1 class="hero-title">English Studio</h1>
+    <p class="hero-subtitle">
+      Look up precise meanings and improve entire paragraphs with guided AI feedback.
+    </p>
+  </header>
+);
 
 const WordSearcher: Component<{
   word: TAction<string, typeof wordAction>;

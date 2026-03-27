@@ -18,9 +18,9 @@ export async function POST({ request }: APIEvent) {
   try {
     const transcription = await fetchTranscript(q, {
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
-    });
-    const result = transcription.map((tscript) => tscript.text).join(" ");
-    if (result.length === 0) {
+    }).then((ts) => ts.map((t) => t.text).join(" "));
+
+    if (transcription.length === 0) {
       return json(
         {
           error: "no response",
@@ -30,7 +30,7 @@ export async function POST({ request }: APIEvent) {
     }
 
     return json({
-      result,
+      result: transcription,
     });
   } catch (e: unknown) {
     if (e instanceof Error) {
@@ -71,11 +71,5 @@ export async function POST({ request }: APIEvent) {
         );
       }
     }
-    return json(
-      {
-        error: "panic!",
-      },
-      { status: 500 },
-    );
   }
 }

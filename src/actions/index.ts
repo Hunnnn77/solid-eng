@@ -3,6 +3,8 @@ import { streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
 
+type TResp = { error: string } | { result: string };
+
 const wordAction = action(async (q: string) => {
   "use server";
 
@@ -67,8 +69,8 @@ const paragraphAction = action(async (q: string) => {
 const transcriptionAction = action(async (dialogValue: string) => {
   "use server";
 
-  const resp: { error: string } | { result: string } = await fetch(
-    `${import.meta.env.DEV ? "http://localhost:3000" : `${process.env.PROD}`}/api/transcription`,
+  const resp: TResp = await fetch(
+    `${import.meta.env.DEV ? "http://localhost:3000" : process.env.PROD}/api/transcription`,
     {
       method: "POST",
       headers: {
@@ -78,7 +80,16 @@ const transcriptionAction = action(async (dialogValue: string) => {
         q: dialogValue,
       }),
     },
-  ).then((r) => r.json());
+  )
+    .then((r) => r.json())
+    .catch((e) => {
+      if (e instanceof Error) {
+        return {
+          ok: false,
+          error: `Response Error: ${e.message}`,
+        };
+      }
+    });
 
   if ("error" in resp) {
     return {
