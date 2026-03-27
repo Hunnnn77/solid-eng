@@ -35,26 +35,24 @@ export async function POST({ request }: APIEvent) {
       result: transcriptData,
     });
   } catch (e: unknown) {
-    if (e instanceof VideoUnavailable) {
-      return json({ error: "video unavailable" }, { status: 404 });
-    }
-
-    if (e instanceof TranscriptsDisabled || e instanceof NoTranscriptFound) {
-      return json({ error: "transcript unavailable" }, { status: 404 });
-    }
-
-    if (e instanceof RateLimitExceeded) {
-      return json({ error: "rate limited" }, { status: 429 });
-    }
-
-    if (e instanceof TimeoutError || e instanceof ConnectionError) {
-      return json({ error: "upstream connection failed" }, { status: 503 });
-    }
-
     if (e instanceof Error) {
+      if (e instanceof VideoUnavailable) {
+        return json({ error: "video unavailable" }, { status: 404 });
+      }
+
+      if (e instanceof TranscriptsDisabled || e instanceof NoTranscriptFound) {
+        return json({ error: "transcript unavailable" }, { status: 404 });
+      }
+
+      if (e instanceof RateLimitExceeded) {
+        return json({ error: "rate limited" }, { status: 429 });
+      }
+
+      if (e instanceof TimeoutError || e instanceof ConnectionError) {
+        return json({ error: "upstream connection failed" }, { status: 503 });
+      }
+
       return json({ error: e.message }, { status: 500 });
     }
-
-    return json({ error: "unknown error" }, { status: 500 });
   }
 }
