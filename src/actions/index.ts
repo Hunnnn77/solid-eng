@@ -69,38 +69,42 @@ const paragraphAction = action(async (q: string) => {
 const transcriptionAction = action(async (id: string) => {
   "use server";
 
-  const resp: TResp = await fetch(
-    `${import.meta.env ? "http://localhost:3000" : process.env.PROD}/api/transcription`,
-    {
-      method: "POST",
-      headers: {
-        "Content-type": "application/json",
+  try {
+    const resp: TResp = await fetch(
+      `${import.meta.env ? "http://localhost:3000" : process.env.PROD}/api/transcription`,
+      {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+        }),
       },
-      body: JSON.stringify({
-        id,
-      }),
-    },
-  )
-    .then((r) => r.json())
-    .catch((e) => {
-      if (e instanceof Error) {
-        return {
-          ok: false,
-          error: `ERR: ${e.message}`,
-        };
-      }
-    });
+    ).then((r) => r.json());
 
-  if ("error" in resp) {
+    if ("error" in resp) {
+      return {
+        ok: false,
+        error: `YOUTUBE_ERR: ${resp.error}`,
+      };
+    }
+    return {
+      ok: true,
+      result: resp.result,
+    };
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      return {
+        ok: false,
+        error: `Fetch_ERR: ${e.message}`,
+      };
+    }
     return {
       ok: false,
-      error: `YOUTUBE_ERR: ${resp.error}`,
+      error: `Panic!`,
     };
   }
-  return {
-    ok: true,
-    result: resp.result,
-  };
 });
 
 const analyzeAction = action(async (transcription: string) => {

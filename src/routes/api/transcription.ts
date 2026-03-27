@@ -1,14 +1,12 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { json } from "@solidjs/router";
 import {
-  VideoUnavailable,
-  TranscriptsDisabled,
-  NoTranscriptFound,
-  RateLimitExceeded,
-  TimeoutError,
-  ConnectionError,
-  YouTubeTranscriptApi,
-} from "youtube-transcript-api-js";
+  fetchTranscript,
+  YoutubeTranscriptDisabledError,
+  YoutubeTranscriptNotAvailableError,
+  YoutubeTranscriptNotAvailableLanguageError,
+  YoutubeTranscriptVideoUnavailableError,
+} from "youtube-transcript-plus";
 
 interface TranscriptionBody {
   id: string;
@@ -16,13 +14,19 @@ interface TranscriptionBody {
 
 export async function POST({ request }: APIEvent) {
   const { id }: TranscriptionBody = await request.json();
-  const api = new YouTubeTranscriptApi();
 
   try {
-    const info = await api.fetch(id);
-    const transcriptData = info.snippets.map((e) => e.text).join(" ");
+    const script = (
+      await fetchTranscript(id, {
+        userAgent:
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0",
+        disableHttps: true,
+      })
+    )
+      .map((e) => e.text)
+      .join(" ");
 
-    if (transcriptData.length === 0) {
+    if (!script) {
       return json(
         {
           error: "no response",
@@ -30,29 +34,27 @@ export async function POST({ request }: APIEvent) {
         { status: 400 },
       );
     }
-
     return json({
-      result: transcriptData,
+      result: script,
     });
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      if (e instanceof VideoUnavailable) {
-        return json({ error: "video unavailable" }, { status: 404 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error instanceof YoutubeTranscriptVideoUnavailableError) {
+        return json({ error: `Video is unavailable: ${error.videoId}` }, { status: 404 });
+      } else if (error instanceof YoutubeTranscriptDisabledError) {
+        return json({ error: `Transcripts are disabled: ${error.videoId}` }, { status: 403 });
+      } else if (error instanceof YoutubeTranscriptNotAvailableError) {
+        return json({ error: `No transcript available: ${error.videoId}` }, { status: 404 });
+      } else if (error instanceof YoutubeTranscriptNotAvailableLanguageError) {
+        return json(
+          { error: `Language not available: ${error.lang} ${error.availableLangs}` },
+          { status: 422 },
+        );
+      } else {
+        return json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
       }
-
-      if (e instanceof TranscriptsDisabled || e instanceof NoTranscriptFound) {
-        return json({ error: "transcript unavailable" }, { status: 404 });
-      }
-
-      if (e instanceof RateLimitExceeded) {
-        return json({ error: "rate limited" }, { status: 429 });
-      }
-
-      if (e instanceof TimeoutError || e instanceof ConnectionError) {
-        return json({ error: "upstream connection failed" }, { status: 503 });
-      }
-
-      return json({ error: e.message }, { status: 500 });
     }
+
+    return json({ error: "An unexpected non-error exception occurred." }, { status: 500 });
   }
 }
