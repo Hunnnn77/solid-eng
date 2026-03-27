@@ -71,7 +71,7 @@ const transcriptionAction = action(async (id: string) => {
 
   try {
     const resp: TResp = await fetch(
-      `${import.meta.env.DEV ? "http://localhost:3000" : process.env.PROD}/api/transcription`,
+      `${import.meta.env.DEV ? "http://localhost:3000" : ""}/api/transcription`,
       {
         method: "POST",
         headers: {
@@ -86,7 +86,7 @@ const transcriptionAction = action(async (id: string) => {
     if ("error" in resp) {
       return {
         ok: false,
-        error: `YOUTUBE_ERR: ${resp.error}`,
+        error: resp.error,
       };
     }
     return {
@@ -97,7 +97,7 @@ const transcriptionAction = action(async (id: string) => {
     if (e instanceof Error) {
       return {
         ok: false,
-        error: `Fetch_ERR: ${e.message}`,
+        error: e.message,
       };
     }
     return {

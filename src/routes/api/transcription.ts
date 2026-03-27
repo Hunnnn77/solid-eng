@@ -16,15 +16,7 @@ export async function POST({ request }: APIEvent) {
   const { id }: TranscriptionBody = await request.json();
 
   try {
-    const script = (
-      await fetchTranscript(id, {
-        userAgent:
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0",
-        disableHttps: true,
-      })
-    )
-      .map((e) => e.text)
-      .join(" ");
+    const script = (await fetchTranscript(id)).map((e) => e.text).join(" ");
 
     if (!script) {
       return json(
