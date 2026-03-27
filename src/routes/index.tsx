@@ -236,8 +236,7 @@ const YoutubeComponent: Component<{
       });
 
       const resp = await transcription(youtubeId());
-
-      if (!resp.ok && resp.error) {
+      if (resp.error) {
         batch(() => {
           setError(resp.error);
           clean();

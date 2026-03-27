@@ -1,9 +1,15 @@
 import { action } from "@solidjs/router";
 import { streamText } from "ai";
+import type { error } from "console";
 import dedent from "dedent";
+import {
+  fetchTranscript,
+  YoutubeTranscriptDisabledError,
+  YoutubeTranscriptNotAvailableError,
+  YoutubeTranscriptNotAvailableLanguageError,
+  YoutubeTranscriptVideoUnavailableError,
+} from "youtube-transcript-plus";
 import { deepseek } from "~/client/llm";
-
-type TResp = { error: string } | { ok: string };
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -70,40 +76,25 @@ const transcriptionAction = action(async (id: string) => {
   "use server";
 
   try {
-    const resp: TResp = await fetch(
-      `${import.meta.env.DEV ? "http://localhost:3000" : process.env.PROD}/api/transcription`,
-      {
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-        }),
-      },
-    ).then((r) => r.json());
-
-    if ("error" in resp) {
-      return {
-        ok: false,
-        error: resp.error,
-      };
-    }
+    const result = (await fetchTranscript(id)).map((e) => e.text).join(" ");
     return {
-      ok: true,
-      result: resp.ok,
+      result,
     };
   } catch (e: unknown) {
     if (e instanceof Error) {
-      return {
-        ok: false,
-        error: e.message,
-      };
+      if (e instanceof YoutubeTranscriptVideoUnavailableError) {
+        return { error: `Video is unavailable: ${e.videoId}` };
+      } else if (e instanceof YoutubeTranscriptDisabledError) {
+        return { error: `Transcripts are disabled: ${e.videoId}` };
+      } else if (e instanceof YoutubeTranscriptNotAvailableError) {
+        return { error: `No transcript available: ${e.videoId}` };
+      } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
+        return { error: `Language not available: ${e.lang} ${e.availableLangs}` };
+      } else {
+        return { error: `An unexpected error occurred: ${e.message}` };
+      }
     }
-    return {
-      ok: false,
-      error: `Panic!`,
-    };
+    return { error: `PANIC!` };
   }
 });
 
