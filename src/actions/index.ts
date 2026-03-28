@@ -3,12 +3,13 @@ import { streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
 import {
-  IpBlocked,
-  NoTranscriptFound,
-  TranscriptsDisabled,
-  VideoUnavailable,
-  YouTubeTranscriptApi,
-} from "@playzone/youtube-transcript";
+  fetchTranscript,
+  YoutubeTranscriptDisabledError,
+  YoutubeTranscriptInvalidLangError,
+  YoutubeTranscriptNotAvailableError,
+  YoutubeTranscriptNotAvailableLanguageError,
+  YoutubeTranscriptVideoUnavailableError,
+} from "youtube-transcript-plus";
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -71,30 +72,36 @@ const paragraphAction = action(async (q: string) => {
   };
 }, "paragraph");
 
+type TResult = {
+  ok?: boolean;
+  message: string;
+};
+
 const transcriptionAction = action(async (id: string) => {
   "use server";
 
-  const api = new YouTubeTranscriptApi();
-
   try {
-    const contents = await api.fetch(id);
-    const text = contents.snippets.map((sn) => sn.text).join(" ");
     return {
-      result: text,
-    };
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error instanceof NoTranscriptFound) {
-        return { error: "No transcript found for this video" };
-      } else if (error instanceof VideoUnavailable) {
-        return { error: "Video is unavailable" };
-      } else if (error instanceof TranscriptsDisabled) {
-        return { error: "Transcripts are disabled for this video" };
-      } else if (error instanceof IpBlocked) {
-        return { error: "IP address is blocked, try using a proxy" };
+      ok: true,
+      message: await fetchTranscript(id).then((c) => c.map((seg) => seg.text).join(" ")),
+    } satisfies TResult;
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      if (e instanceof YoutubeTranscriptVideoUnavailableError) {
+        return `Video is unavailable: ${e.videoId}`;
+      } else if (e instanceof YoutubeTranscriptDisabledError) {
+        return `Transcripts are disabled: ${e.videoId}`;
+      } else if (e instanceof YoutubeTranscriptNotAvailableError) {
+        return `No transcript available: ${e.videoId}`;
+      } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
+        return `Language not available: ${e.lang} ${e.availableLangs}`;
+      } else if (e instanceof YoutubeTranscriptInvalidLangError) {
+        return `Invalid language code: ${e.lang}`;
+      } else {
+        return `An unexpected error occurred: ${e.message}`;
       }
-      return { error: error.message };
     }
+    return "panic!";
   }
 });
 

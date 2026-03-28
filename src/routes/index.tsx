@@ -178,7 +178,7 @@ const YoutubeComponent: Component<{
   const [title, setTitle] = createSignal("");
   const [url, setUrl] = createSignal("");
   const [transcript, setTranscript] = createSignal("");
-  const [error, setError] = createSignal("");
+  const [error, setError] = createSignal<string | undefined>();
   const [loading, setLoading] = createSignal(false);
 
   const youtubeId = createMemo(() => {
@@ -226,8 +226,10 @@ const YoutubeComponent: Component<{
       if (url().length === 0) return;
 
       const clean = () => {
-        setUrl("");
-        setLoading(false);
+        batch(() => {
+          setUrl("");
+          setLoading(false);
+        });
       };
 
       batch(() => {
@@ -235,29 +237,19 @@ const YoutubeComponent: Component<{
         setLoading(true);
       });
 
-      const resp = await transcription(youtubeId());
-      if (resp?.error) {
-        batch(() => {
-          setError(resp.error);
-          clean();
-        });
-        return;
+      const fetchTranscript = await transcription(youtubeId());
+
+      if (typeof fetchTranscript === "object" && "ok" in fetchTranscript) {
+        const { stream } = await analyze(fetchTranscript.message);
+        let answer = "";
+        for await (const a of stream) {
+          answer += a;
+          setTranscript(answer);
+        }
+      } else {
+        setError(fetchTranscript);
       }
-
-      let text = resp?.result?.replaceAll("&gt;", ">");
-      text = (text ?? "").replaceAll("&#39;", "'");
-
-      const stream = (await analyze(text)).stream;
-      let answer = "";
-      for await (const a of stream) {
-        answer += a;
-        setTranscript(answer);
-      }
-
-      batch(() => {
-        setLoading(false);
-        setUrl("");
-      });
+      clean();
     });
   });
 
@@ -283,8 +275,8 @@ const YoutubeComponent: Component<{
       </Show>
 
       <Switch>
-        <Match when={error().length > 0}>
-          <Prose text={error()}></Prose>
+        <Match when={error() ?? "".length > 0}>
+          <Prose text={error() ?? ""}></Prose>
         </Match>
         <Match when={transcript().length > 0}>
           <Prose text={transcript()}></Prose>
