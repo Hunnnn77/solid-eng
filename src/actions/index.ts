@@ -95,7 +95,7 @@ const transcriptionAction = action(async (id: string) => {
 
       message = await fetchTranscript(id, {
         videoFetch: async ({ url, lang, userAgent }) => {
-          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
+          return fetch(`${proxyServer}?url=${encodeURIComponent(url)}`, {
             //@ts-ignore
             headers: {
               ...(lang && { "Accept-Language": lang }),
@@ -104,7 +104,7 @@ const transcriptionAction = action(async (id: string) => {
           });
         },
         playerFetch: async ({ url, method, body, headers, lang, userAgent }) => {
-          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
+          return fetch(`${proxyServer}?url=${encodeURIComponent(url)}`, {
             method,
             //@ts-ignore
             headers: {
@@ -117,7 +117,7 @@ const transcriptionAction = action(async (id: string) => {
         },
         transcriptFetch: async ({ url, lang, userAgent }) => {
           console.log(url)
-          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
+          return fetch(`${proxyServer}?url=${encodeURIComponent(url)}`, {
             //@ts-ignore
             headers: {
               ...(lang && { "Accept-Language": lang }),
