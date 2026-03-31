@@ -218,19 +218,17 @@ const YoutubeComponent: Component<{
     dialog.close(youtubeId());
   }
 
+  const clean = () =>
+    batch(() => {
+      setUrl("");
+      setLoading(false);
+    });
+
   onMount(() => {
     dialogEl()?.addEventListener("close", async () => {
       const dialog = dialogEl();
       if (!dialog || !dialog.returnValue) return;
-
       if (url().length === 0) return;
-
-      const clean = () => {
-        batch(() => {
-          setUrl("");
-          setLoading(false);
-        });
-      };
 
       batch(() => {
         setTitle(getYoutubeUrl(youtubeId()));

@@ -81,9 +81,54 @@ const transcriptionAction = action(async (id: string) => {
   "use server";
 
   try {
+    let message = "";
+
+    if (import.meta.env.DEV) {
+      message = await fetchTranscript(id).then((seg) => seg.map((t) => t.text).join(" "));
+    } else {
+      const proxyServer = process.env.PROXY;
+
+      if (!proxyServer) {
+        throw new Error("DESTINATION is not configured in production environment.");
+      }
+
+      message = await fetchTranscript(id, {
+        videoFetch: async ({ url, lang, userAgent }) => {
+          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
+            //@ts-ignore
+            headers: {
+              ...(lang && { "Accept-Language": lang }),
+              "User-Agent": userAgent,
+            },
+          });
+        },
+        playerFetch: async ({ url, method, body, headers, lang, userAgent }) => {
+          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
+            method,
+            //@ts-ignore
+            headers: {
+              ...(lang && { "Accept-Language": lang }),
+              "User-Agent": userAgent,
+              ...headers,
+            },
+            body,
+          });
+        },
+        transcriptFetch: async ({ url, lang, userAgent }) => {
+          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
+            //@ts-ignore
+            headers: {
+              ...(lang && { "Accept-Language": lang }),
+              "User-Agent": userAgent,
+            },
+          });
+        },
+      }).then((seg) => seg.map((t) => t.text).join(" "));
+    }
+
     return {
       ok: true,
-      message: await fetchTranscript(id).then((c) => c.map((seg) => seg.text).join(" ")),
+      message,
     } satisfies TResult;
   } catch (e: unknown) {
     if (e instanceof Error) {
