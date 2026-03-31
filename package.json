@@ -19,7 +19,6 @@
     "dedent": "^1.7.2",
     "marked": "^17.0.5",
     "solid-js": "^1.9.5",
-    "undici": "^7.24.6",
     "vinxi": "^0.5.7",
     "youtube-transcript-plus": "^2.0.0"
   },
