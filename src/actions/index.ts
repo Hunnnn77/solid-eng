@@ -1,8 +1,8 @@
 import { action } from "@solidjs/router";
-import { SerialJobExecutor, streamText } from "ai";
+import { streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
-import { Supadata, type JobResult, type Transcript, type TranscriptChunk } from '@supadata/js';
+import { Supadata, type TranscriptChunk } from "@supadata/js";
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -85,33 +85,31 @@ const transcriptionAction = action(async (id: string) => {
       text: true,
       mode: "auto",
     });
-    return transcriptResult
-  }
+    return transcriptResult;
+  };
 
   const getContent = (content: string | TranscriptChunk[] | undefined) => {
     if (Array.isArray(content)) {
-      return content.map((e) => e.text).join(" ")
+      return content.map((e) => e.text).join(" ");
     } else {
-      return content ?? ''
+      return content ?? "";
     }
-  }
+  };
 
   try {
-    const transcriptResult = await fetchTransciprt()
+    const transcriptResult = await fetchTransciprt();
 
     if ("jobId" in transcriptResult) {
-      const jobResult = await supadata.transcript.getJobStatus(
-        transcriptResult.jobId
-      );
+      const jobResult = await supadata.transcript.getJobStatus(transcriptResult.jobId);
       if (jobResult.status === "completed") {
-        message = getContent(jobResult.result?.content)
+        message = getContent(jobResult.result?.content);
       } else if (jobResult.status === "failed") {
-        message = "Transcript failed:" + jobResult.error
+        message = "Transcript failed:" + jobResult.error;
       } else {
-        message = "Job status:" + jobResult.status
+        message = "Job status:" + jobResult.status;
       }
     } else {
-      message = getContent(transcriptResult.content)
+      message = getContent(transcriptResult.content);
     }
 
     return {
@@ -132,10 +130,10 @@ const analyzeAction = action(async (transcription: string) => {
   Here is output format
 
   **Brief Summary**
-  **Repetitive Words**
-  **Commonly used Sentences**
+  **Words (noun, verb, adjective only, using markdown table format)**
+  **Paragraphs**
   `;
-  const prompt = `Please analyze sentences: ${transcription}`;
+  const prompt = `Please analyze sentences and split wrods and paragraphs: ${transcription}`;
   const { textStream } = streamText({
     system,
     model: deepseek(process.env.DEEPSEEK_API)("deepseek-chat"),
