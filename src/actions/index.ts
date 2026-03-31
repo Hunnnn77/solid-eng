@@ -87,6 +87,7 @@ const transcriptionAction = action(async (id: string) => {
       message = await fetchTranscript(id).then((seg) => seg.map((t) => t.text).join(" "));
     } else {
       const proxyServer = process.env.PROXY;
+      const destination = process.env.DESTINATION
 
       if (!proxyServer) {
         throw new Error("DESTINATION is not configured in production environment.");
@@ -115,6 +116,7 @@ const transcriptionAction = action(async (id: string) => {
           });
         },
         transcriptFetch: async ({ url, lang, userAgent }) => {
+          console.log(url)
           return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
             //@ts-ignore
             headers: {
