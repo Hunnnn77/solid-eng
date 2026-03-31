@@ -3,13 +3,10 @@ import { streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
 import {
-  fetchTranscript,
-  YoutubeTranscriptDisabledError,
-  YoutubeTranscriptInvalidLangError,
-  YoutubeTranscriptNotAvailableError,
-  YoutubeTranscriptNotAvailableLanguageError,
-  YoutubeTranscriptVideoUnavailableError,
-} from "youtube-transcript-plus";
+  GenericProxyConfig,
+  YouTubeTranscriptApi,
+  type FetchedTranscript,
+} from "youtube-transcript-api-js";
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -80,49 +77,19 @@ type TResult = {
 const transcriptionAction = action(async (id: string) => {
   "use server";
 
+  let message = "";
+  const handleSnippets = (output: FetchedTranscript) =>
+    output.snippets.map((sn) => sn.text).join(" ");
+
   try {
-    let message = "";
-
     if (import.meta.env.DEV) {
-      message = await fetchTranscript(id).then((seg) => seg.map((t) => t.text).join(" "));
+      const api = new YouTubeTranscriptApi();
+      message = await api.fetch(id).then(handleSnippets);
     } else {
-      const proxyServer = process.env.PROXY;
-      if (!proxyServer) {
-        throw new Error("PROXY is not configured in production environment.");
-      }
-
-      message = await fetchTranscript(id, {
-        videoFetch: async ({ url, lang, userAgent }) => {
-          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
-            //@ts-ignore
-            headers: {
-              ...(lang && { "Accept-Language": lang }),
-              "User-Agent": userAgent,
-            },
-          });
-        },
-        playerFetch: async ({ url, method, body, headers, lang, userAgent }) => {
-          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
-            method,
-            //@ts-ignore
-            headers: {
-              ...(lang && { "Accept-Language": lang }),
-              "User-Agent": userAgent,
-              ...headers,
-            },
-            body,
-          });
-        },
-        transcriptFetch: async ({ url, lang, userAgent }) => {
-          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
-            //@ts-ignore
-            headers: {
-              ...(lang && { "Accept-Language": lang }),
-              "User-Agent": userAgent,
-            },
-          });
-        },
-      }).then((seg) => seg.map((t) => t.text).join(" "));
+      const server = process.env.PROXY;
+      const proxyConfig = new GenericProxyConfig(server, server);
+      const api = new YouTubeTranscriptApi(proxyConfig);
+      message = await api.fetch(id).then(handleSnippets);
     }
 
     return {
@@ -131,21 +98,8 @@ const transcriptionAction = action(async (id: string) => {
     } satisfies TResult;
   } catch (e: unknown) {
     if (e instanceof Error) {
-      if (e instanceof YoutubeTranscriptVideoUnavailableError) {
-        return { ok: false, message: `Video is unavailable: ${e.videoId}` } satisfies TResult;
-      } else if (e instanceof YoutubeTranscriptDisabledError) {
-        return { ok: false, message: `Transcripts are disabled: ${e.videoId}` } satisfies TResult;
-      } else if (e instanceof YoutubeTranscriptNotAvailableError) {
-        return { ok: false, message: `No transcript available: ${e.videoId}` } satisfies TResult;
-      } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
-        return { ok: false, message: `Language not available: ${e.lang} ${e.availableLangs}` } satisfies TResult;
-      } else if (e instanceof YoutubeTranscriptInvalidLangError) {
-        return { ok: false, message: `Invalid language code: ${e.lang}` } satisfies TResult;
-      } else {
-        return { ok: false, message: `An unexpected error occurred: ${e.message}` } satisfies TResult;
-      }
+      return { ok: false, message: e.message } satisfies TResult;
     }
-    return { ok: false, message: "panic!" } satisfies TResult;
   }
 });
 

@@ -20,7 +20,7 @@
     "marked": "^17.0.5",
     "solid-js": "^1.9.5",
     "vinxi": "^0.5.7",
-    "youtube-transcript-plus": "^2.0.0"
+    "youtube-transcript-api-js": "^3.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

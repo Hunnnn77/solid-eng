@@ -249,7 +249,7 @@ const YoutubeComponent: Component<{
           setError(fetchTranscript.message);
         }
       } else {
-        setError("Invalid fetchTranscript")
+        setError("Invalid fetchTranscript");
       }
 
       clean();
