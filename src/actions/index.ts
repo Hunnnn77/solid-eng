@@ -78,8 +78,6 @@ const transcriptionAction = action(async (id: string) => {
     apiKey: process.env.SUPADATA_API,
   });
 
-  // Get transcript from any supported platform (YouTube, TikTok, Instagram, X (Twitter)) or file
-
   const fetchTransciprt = async () => {
     const transcriptResult = await supadata.transcript({
       url: `https://www.youtube.com/watch?v=${id}`,
@@ -89,6 +87,7 @@ const transcriptionAction = action(async (id: string) => {
     });
     return transcriptResult
   }
+
   const getContent = (content: string | TranscriptChunk[] | undefined) => {
     if (Array.isArray(content)) {
       return content.map((e) => e.text).join(" ")
@@ -99,6 +98,7 @@ const transcriptionAction = action(async (id: string) => {
 
   try {
     const transcriptResult = await fetchTransciprt()
+
     if ("jobId" in transcriptResult) {
       const jobResult = await supadata.transcript.getJobStatus(
         transcriptResult.jobId
@@ -106,9 +106,9 @@ const transcriptionAction = action(async (id: string) => {
       if (jobResult.status === "completed") {
         message = getContent(jobResult.result?.content)
       } else if (jobResult.status === "failed") {
-        message = "Transcript failed:", jobResult.error
+        message = "Transcript failed:" + jobResult.error
       } else {
-        message = "Job status:", jobResult.status
+        message = "Job status:" + jobResult.status
       }
     } else {
       message = getContent(transcriptResult.content)
