@@ -10,6 +10,7 @@ import {
   YoutubeTranscriptNotAvailableLanguageError,
   YoutubeTranscriptVideoUnavailableError,
 } from "youtube-transcript-plus";
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -88,23 +89,24 @@ const transcriptionAction = action(async (id: string) => {
     } else {
       const proxyServer = process.env.PROXY;
       const destination = process.env.DESTINATION
+      const agent = new HttpsProxyAgent(proxyServer)
 
       if (!proxyServer) {
         throw new Error("DESTINATION is not configured in production environment.");
       }
-
       message = await fetchTranscript(id, {
         videoFetch: async ({ url, lang, userAgent }) => {
-          return fetch(`${proxyServer}?url=${encodeURIComponent(url)}`, {
+          return fetch(encodeURIComponent(url), {
             //@ts-ignore
             headers: {
               ...(lang && { "Accept-Language": lang }),
               "User-Agent": userAgent,
             },
+            agent
           });
         },
         playerFetch: async ({ url, method, body, headers, lang, userAgent }) => {
-          return fetch(`${proxyServer}?url=${encodeURIComponent(url)}`, {
+          return fetch(encodeURIComponent(url), {
             method,
             //@ts-ignore
             headers: {
@@ -112,17 +114,18 @@ const transcriptionAction = action(async (id: string) => {
               "User-Agent": userAgent,
               ...headers,
             },
+            agent: agent,
             body,
           });
         },
         transcriptFetch: async ({ url, lang, userAgent }) => {
-          console.log(url)
-          return fetch(`${proxyServer}?url=${encodeURIComponent(url)}`, {
+          return fetch(encodeURIComponent(url), {
             //@ts-ignore
             headers: {
               ...(lang && { "Accept-Language": lang }),
               "User-Agent": userAgent,
             },
+            agent: agent,
           });
         },
       }).then((seg) => seg.map((t) => t.text).join(" "));

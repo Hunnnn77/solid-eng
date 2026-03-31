@@ -17,6 +17,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "ai": "^6.0.136",
     "dedent": "^1.7.2",
+    "https-proxy-agent": "^8.0.0",
     "marked": "^17.0.5",
     "solid-js": "^1.9.5",
     "vinxi": "^0.5.7",
