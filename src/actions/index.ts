@@ -10,7 +10,6 @@ import {
   YoutubeTranscriptNotAvailableLanguageError,
   YoutubeTranscriptVideoUnavailableError,
 } from "youtube-transcript-plus";
-import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -88,25 +87,22 @@ const transcriptionAction = action(async (id: string) => {
       message = await fetchTranscript(id).then((seg) => seg.map((t) => t.text).join(" "));
     } else {
       const proxyServer = process.env.PROXY;
-      const destination = process.env.DESTINATION
-      const agent = new HttpsProxyAgent(proxyServer)
-
       if (!proxyServer) {
-        throw new Error("DESTINATION is not configured in production environment.");
+        throw new Error("PROXY is not configured in production environment.");
       }
+
       message = await fetchTranscript(id, {
         videoFetch: async ({ url, lang, userAgent }) => {
-          return fetch(encodeURIComponent(url), {
+          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
             //@ts-ignore
             headers: {
               ...(lang && { "Accept-Language": lang }),
               "User-Agent": userAgent,
             },
-            agent
           });
         },
         playerFetch: async ({ url, method, body, headers, lang, userAgent }) => {
-          return fetch(encodeURIComponent(url), {
+          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
             method,
             //@ts-ignore
             headers: {
@@ -114,18 +110,16 @@ const transcriptionAction = action(async (id: string) => {
               "User-Agent": userAgent,
               ...headers,
             },
-            agent: agent,
             body,
           });
         },
         transcriptFetch: async ({ url, lang, userAgent }) => {
-          return fetch(encodeURIComponent(url), {
+          return fetch(`${proxyServer}/?url=${encodeURIComponent(url)}`, {
             //@ts-ignore
             headers: {
               ...(lang && { "Accept-Language": lang }),
               "User-Agent": userAgent,
             },
-            agent: agent,
           });
         },
       }).then((seg) => seg.map((t) => t.text).join(" "));
@@ -138,20 +132,20 @@ const transcriptionAction = action(async (id: string) => {
   } catch (e: unknown) {
     if (e instanceof Error) {
       if (e instanceof YoutubeTranscriptVideoUnavailableError) {
-        return `Video is unavailable: ${e.videoId}`;
+        return { ok: false, message: `Video is unavailable: ${e.videoId}` } satisfies TResult;
       } else if (e instanceof YoutubeTranscriptDisabledError) {
-        return `Transcripts are disabled: ${e.videoId}`;
+        return { ok: false, message: `Transcripts are disabled: ${e.videoId}` } satisfies TResult;
       } else if (e instanceof YoutubeTranscriptNotAvailableError) {
-        return `No transcript available: ${e.videoId}`;
+        return { ok: false, message: `No transcript available: ${e.videoId}` } satisfies TResult;
       } else if (e instanceof YoutubeTranscriptNotAvailableLanguageError) {
-        return `Language not available: ${e.lang} ${e.availableLangs}`;
+        return { ok: false, message: `Language not available: ${e.lang} ${e.availableLangs}` } satisfies TResult;
       } else if (e instanceof YoutubeTranscriptInvalidLangError) {
-        return `Invalid language code: ${e.lang}`;
+        return { ok: false, message: `Invalid language code: ${e.lang}` } satisfies TResult;
       } else {
-        return `An unexpected error occurred: ${e.message}`;
+        return { ok: false, message: `An unexpected error occurred: ${e.message}` } satisfies TResult;
       }
     }
-    return "panic!";
+    return { ok: false, message: "panic!" } satisfies TResult;
   }
 });
 

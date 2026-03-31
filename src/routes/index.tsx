@@ -238,15 +238,20 @@ const YoutubeComponent: Component<{
       const fetchTranscript = await transcription(youtubeId());
 
       if (typeof fetchTranscript === "object" && "ok" in fetchTranscript) {
-        const { stream } = await analyze(fetchTranscript.message);
-        let answer = "";
-        for await (const a of stream) {
-          answer += a;
-          setTranscript(answer);
+        if (fetchTranscript.ok) {
+          const { stream } = await analyze(fetchTranscript.message);
+          let answer = "";
+          for await (const a of stream) {
+            answer += a;
+            setTranscript(answer);
+          }
+        } else {
+          setError(fetchTranscript.message);
         }
       } else {
-        setError(fetchTranscript);
+        setError("Invalid fetchTranscript")
       }
+
       clean();
     });
   });
