@@ -14,13 +14,13 @@
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.1.0",
+    "@supadata/js": "^1.4.0",
     "@tailwindcss/typography": "^0.5.19",
     "ai": "^6.0.136",
     "dedent": "^1.7.2",
     "marked": "^17.0.5",
     "solid-js": "^1.9.5",
-    "vinxi": "^0.5.7",
-    "youtube-transcript-api-js": "^3.0.2"
+    "vinxi": "^0.5.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

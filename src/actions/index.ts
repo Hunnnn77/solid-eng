@@ -1,12 +1,8 @@
 import { action } from "@solidjs/router";
-import { streamText } from "ai";
+import { SerialJobExecutor, streamText } from "ai";
 import dedent from "dedent";
 import { deepseek } from "~/client/llm";
-import {
-  GenericProxyConfig,
-  YouTubeTranscriptApi,
-  type FetchedTranscript,
-} from "youtube-transcript-api-js";
+import { Supadata, type JobResult, type Transcript, type TranscriptChunk } from '@supadata/js';
 
 const wordAction = action(async (q: string) => {
   "use server";
@@ -78,18 +74,44 @@ const transcriptionAction = action(async (id: string) => {
   "use server";
 
   let message = "";
-  const handleSnippets = (output: FetchedTranscript) =>
-    output.snippets.map((sn) => sn.text).join(" ");
+  const supadata = new Supadata({
+    apiKey: process.env.SUPADATA_API,
+  });
+
+  // Get transcript from any supported platform (YouTube, TikTok, Instagram, X (Twitter)) or file
+
+  const fetchTransciprt = async () => {
+    const transcriptResult = await supadata.transcript({
+      url: `https://www.youtube.com/watch?v=${id}`,
+      lang: "en",
+      text: true,
+      mode: "auto",
+    });
+    return transcriptResult
+  }
+  const getContent = (content: string | TranscriptChunk[] | undefined) => {
+    if (Array.isArray(content)) {
+      return content.map((e) => e.text).join(" ")
+    } else {
+      return content ?? ''
+    }
+  }
 
   try {
-    if (import.meta.env.DEV) {
-      const api = new YouTubeTranscriptApi();
-      message = await api.fetch(id).then(handleSnippets);
+    const transcriptResult = await fetchTransciprt()
+    if ("jobId" in transcriptResult) {
+      const jobResult = await supadata.transcript.getJobStatus(
+        transcriptResult.jobId
+      );
+      if (jobResult.status === "completed") {
+        message = getContent(jobResult.result?.content)
+      } else if (jobResult.status === "failed") {
+        message = "Transcript failed:", jobResult.error
+      } else {
+        message = "Job status:", jobResult.status
+      }
     } else {
-      const server = process.env.PROXY;
-      const proxyConfig = new GenericProxyConfig(server, server);
-      const api = new YouTubeTranscriptApi(proxyConfig);
-      message = await api.fetch(id).then(handleSnippets);
+      message = getContent(transcriptResult.content)
     }
 
     return {
