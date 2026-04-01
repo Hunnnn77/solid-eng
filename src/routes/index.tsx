@@ -6,6 +6,7 @@ import {
   createComputed,
   createMemo,
   createSignal,
+  For,
   Match,
   onMount,
   Show,
@@ -15,10 +16,12 @@ import {
 } from "solid-js";
 import { Input } from "~/components/Input";
 import type { TAction } from "~/types";
-import { marked } from "marked";
+import { marked, parse } from "marked";
 import { Button } from "~/components/Button";
 import { analyzeAction, paragraphAction, transcriptionAction, wordAction } from "~/actions";
 import { getYoutubeUrl } from "~/utils";
+import { Portal } from "solid-js/web";
+import { useHistoryContext, type IHistory } from "~/components/HistoriesProvider";
 
 export default function Home() {
   const transcription = useAction(transcriptionAction);
@@ -44,19 +47,96 @@ export default function Home() {
   );
 }
 
-const Header: Component = () => (
-  <header class="hero-card panel-surface panel-border panel-shadow">
-    <p class="eyebrow">Writing companion</p>
-    <h1 class="hero-title">English Studio</h1>
-    <p class="hero-subtitle">
-      Look up precise meanings and improve entire paragraphs with guided AI feedback.
-    </p>
-  </header>
-);
+const Header: Component = () => {
+  const historyCtx = useHistoryContext();
+  const [historyDialog, setHistoryDialog] = createSignal<HTMLDialogElement>();
+  const [historyOpen, setHistoryOpen] = createSignal(false);
+  const [catched, setCatched] = createSignal<IHistory | undefined>();
+
+  function whenClickWord(history: IHistory) {
+    historyDialog()?.close();
+
+    batch(() => {
+      setHistoryOpen(true);
+      setCatched(history);
+    });
+  }
+
+  return (
+    <header class="hero-card panel-surface panel-border panel-shadow">
+      <div class="header-row">
+        <div>
+          <p class="eyebrow">Writing companion</p>
+          <h1 class="hero-title hero-title--spaced">English Studio</h1>
+        </div>
+
+        <div class="header-actions">
+          <Button
+            callback={() => historyCtx.histories().length > 0 && historyDialog()?.showModal()}
+          >
+            history({historyCtx.histories().length})
+          </Button>
+        </div>
+      </div>
+
+      <dialog class="app-dialog panel-surface panel-border" ref={setHistoryDialog}>
+        <div class="dialog-content">
+          <Show when={historyCtx.histories().length > 0}>
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="secondary-head secondary-head--capitalize">history</h2>
+              <Button callback={() => historyDialog()?.close()}>close</Button>
+            </div>
+            <div class="history-list">
+              <For each={historyCtx.histories()}>
+                {(h) => (
+                  <button class="chip" onclick={() => whenClickWord(h)}>
+                    {h.text}
+                  </button>
+                )}
+              </For>
+
+              <Show when={historyOpen()}>
+                <Portal mount={document.querySelector("main")!}>
+                  <div class="app-dialog panel-surface panel-border">
+                    <Show
+                      when={catched()}
+                      fallback={
+                        <div class="history-preview-empty">
+                          <h1 class="hero-title history-preview-empty-title">
+                            no content available
+                          </h1>
+                          <Button
+                            class="history-preview-empty-close"
+                            callback={() => setHistoryOpen(false)}
+                          >
+                            close
+                          </Button>
+                        </div>
+                      }
+                    >
+                      <div>
+                        <div class="flex justify-between items-center mb-6">
+                          <h1 class="hero-title capitalize">{catched()?.text}</h1>
+                          <Button callback={() => setHistoryOpen(false)}>close</Button>
+                        </div>
+                        <Prose text={catched()?.answer ?? ""}></Prose>
+                      </div>
+                    </Show>
+                  </div>
+                </Portal>
+              </Show>
+            </div>
+          </Show>
+        </div>
+      </dialog>
+    </header>
+  );
+};
 
 const WordSearcher: Component<{
   word: TAction<string, typeof wordAction>;
 }> = ({ word: w }) => {
+  const historyCtx = useHistoryContext();
   const [disabled, setDisabled] = createSignal(false);
   const [wordValue, setWordValue] = createSignal("");
   const [answerByWordValue, setAnswerByWordValue] = createSignal("");
@@ -81,6 +161,11 @@ const WordSearcher: Component<{
     }
 
     batch(() => {
+      historyCtx.setHistory({
+        answer: parse(streamed) as string,
+        text: query,
+      });
+
       setWordValue("");
       setDisabled(false);
     });
@@ -174,7 +259,6 @@ const YoutubeComponent: Component<{
   analyze: TAction<string, typeof analyzeAction>;
 }> = ({ transcription, analyze }) => {
   const [dialogEl, setDialogEl] = createSignal<HTMLDialogElement>();
-
   const [title, setTitle] = createSignal("");
   const [url, setUrl] = createSignal("");
   const [transcript, setTranscript] = createSignal("");
@@ -289,7 +373,7 @@ const YoutubeComponent: Component<{
       <dialog class="app-dialog panel-surface panel-border" ref={setDialogEl}>
         <h3>Video URL</h3>
         <input
-          class="field-input"
+          class="input-field"
           value={url()}
           type="url"
           placeholder="https://youtube.com/watch?v=VIDEO_ID"

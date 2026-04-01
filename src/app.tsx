@@ -3,6 +3,7 @@ import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
 import "./app.css";
+import { HistoriesProvider } from "./components/HistoriesProvider";
 
 export default function App() {
   return (
@@ -10,7 +11,9 @@ export default function App() {
       root={(props) => (
         <MetaProvider>
           <Title>App</Title>
-          <Suspense>{props.children}</Suspense>
+          <HistoriesProvider>
+            <Suspense>{props.children}</Suspense>
+          </HistoriesProvider>
         </MetaProvider>
       )}
     >

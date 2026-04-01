@@ -34,9 +34,9 @@ const InputField: Component<TInput> = (props) => {
   const mp = mergeProps({ disabled: false }, s);
 
   return (
-    <div class="input-row">
+    <div class="input-control">
       <input
-        class="field-input"
+        class="input-field"
         disabled={mp.disabled}
         value={s.value}
         type="text"
@@ -52,9 +52,9 @@ const TextArea: Component<TInput> = (props) => {
   const mp = mergeProps({ disabled: false }, s);
 
   return (
-    <div class="input-row input-row-stack">
+    <div class="input-control input-control--stack">
       <textarea
-        class="field-input field-textarea"
+        class="input-field input-field--textarea"
         disabled={mp.disabled}
         value={s.value}
         placeholder={p.placeholder}
