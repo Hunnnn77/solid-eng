@@ -167,6 +167,7 @@
 
 .app-dialog {
   width: min(560px, calc(100vw - 2rem));
+  height: fit-content;
   max-height: calc(100vh - 2rem);
   overflow: auto;
   color: var(--text-main);
@@ -325,9 +326,12 @@
   line-height: 1;
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
+  text-transform: capitalize;
   white-space: nowrap;
-  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
 .chip:hover {

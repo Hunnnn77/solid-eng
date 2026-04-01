@@ -4,6 +4,7 @@ import { useAction } from "@solidjs/router";
 import {
   batch,
   createComputed,
+  createEffect,
   createMemo,
   createSignal,
   For,
@@ -21,7 +22,12 @@ import { Button } from "~/components/Button";
 import { analyzeAction, paragraphAction, transcriptionAction, wordAction } from "~/actions";
 import { getYoutubeUrl } from "~/utils";
 import { Portal } from "solid-js/web";
-import { useHistoryContext, type IHistory } from "~/components/HistoriesProvider";
+import {
+  HistoryKey,
+  useHistoryContext,
+  type IHistoryStorage,
+  type IHistory,
+} from "~/components/HistoriesProvider";
 
 export default function Home() {
   const transcription = useAction(transcriptionAction);
@@ -52,15 +58,63 @@ const Header: Component = () => {
   const [historyDialog, setHistoryDialog] = createSignal<HTMLDialogElement>();
   const [historyOpen, setHistoryOpen] = createSignal(false);
   const [catched, setCatched] = createSignal<IHistory | undefined>();
+  const lenOfHistory = createMemo(() => historyCtx.histories().length);
+
+  function openDialog() {
+    if (historyDialog() && historyDialog()?.isConnected) {
+      historyDialog()?.showModal();
+    }
+  }
+
+  function closeDialog() {
+    if (historyDialog() && historyDialog()?.isConnected) {
+      historyDialog()?.close();
+    }
+  }
 
   function whenClickWord(history: IHistory) {
-    historyDialog()?.close();
-
+    closeDialog();
     batch(() => {
       setHistoryOpen(true);
       setCatched(history);
     });
   }
+
+  createEffect(() => {
+    if (lenOfHistory() === 0) {
+      closeDialog();
+    }
+
+    if (lenOfHistory() >= 0) {
+      localStorage.setItem(
+        HistoryKey,
+        JSON.stringify({
+          histories: historyCtx.histories(),
+        } satisfies IHistoryStorage),
+      );
+    }
+  });
+
+  onMount(() => {
+    if (historyDialog() && historyDialog()?.isConnected) {
+      globalThis.addEventListener("keydown", (e) => {
+        switch (e.key) {
+          case "F1":
+            e.preventDefault();
+            if (historyDialog()?.open) {
+              closeDialog();
+            } else {
+              openDialog();
+            }
+            break;
+          case "ESC":
+            e.preventDefault();
+            setHistoryOpen(false);
+            break;
+        }
+      });
+    }
+  });
 
   return (
     <header class="hero-card panel-surface panel-border panel-shadow">
@@ -71,33 +125,36 @@ const Header: Component = () => {
         </div>
 
         <div class="header-actions">
-          <Button
-            callback={() => historyCtx.histories().length > 0 && historyDialog()?.showModal()}
-          >
-            history({historyCtx.histories().length})
+          <Button callback={() => lenOfHistory() > 0 && openDialog()}>
+            <span>[F1]</span>
+            <span>history({lenOfHistory()})</span>
           </Button>
         </div>
       </div>
 
       <dialog class="app-dialog panel-surface panel-border" ref={setHistoryDialog}>
         <div class="dialog-content">
-          <Show when={historyCtx.histories().length > 0}>
+          <Show when={lenOfHistory() > 0}>
             <div class="flex items-center justify-between mb-6">
               <h2 class="secondary-head secondary-head--capitalize">history</h2>
-              <Button callback={() => historyDialog()?.close()}>close</Button>
+              <Button callback={closeDialog}>close</Button>
             </div>
             <div class="history-list">
               <For each={historyCtx.histories()}>
-                {(h) => (
-                  <button class="chip" onclick={() => whenClickWord(h)}>
-                    {h.text}
-                  </button>
+                {(h, i) => (
+                  <div class="flex items-center space-x-1.5">
+                    <button class="chip" onclick={() => whenClickWord(h)}>
+                      {h.text}
+                    </button>
+                    <button onclick={() => historyCtx.delItemFromHistory(i())}>x</button>
+                  </div>
                 )}
               </For>
 
               <Show when={historyOpen()}>
                 <Portal mount={document.querySelector("main")!}>
-                  <div class="app-dialog panel-surface panel-border">
+                  <div class="absolute top-0 left-0 z-10 opacity-50 bg-black w-full h-full"></div>
+                  <div class="app-dialog panel-surface panel-border z-20">
                     <Show
                       when={catched()}
                       fallback={
