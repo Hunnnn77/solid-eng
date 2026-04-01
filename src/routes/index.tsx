@@ -17,7 +17,7 @@ import {
 } from "solid-js";
 import { Input } from "~/components/Input";
 import type { TAction } from "~/types";
-import { marked, parse } from "marked";
+import { parse } from "marked";
 import { Button } from "~/components/Button";
 import { analyzeAction, paragraphAction, transcriptionAction, wordAction } from "~/actions";
 import { getYoutubeUrl } from "~/utils";
@@ -101,6 +101,10 @@ const Header: Component = () => {
         switch (e.key) {
           case "F1":
             e.preventDefault();
+            if (lenOfHistory() === 0) {
+              break;
+            }
+
             if (historyDialog()?.open) {
               closeDialog();
             } else {
@@ -452,7 +456,7 @@ const Prose: Component<{
   const [markdowned, setMarkdowned] = createSignal("");
 
   createComputed(() => {
-    setMarkdowned(marked.parse(s.text) as string);
+    setMarkdowned(parse(s.text) as string);
   });
 
   return (
