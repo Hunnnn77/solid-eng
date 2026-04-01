@@ -38,20 +38,10 @@ const paragraphAction = action(async (q: string) => {
   Here is output format
 
   **Overral Analysis**
-  **Grammar**
-  **Spelling**
-  **Improvements**
-    1.
-    2.
-    3.
-    4.
-    5.
-  **Improved Sentence**
-    1.
-    2.
-    3.
-    4.
-    5.
+  **Grammatical Errors (without any explaination)**
+  {Original sentence}
+  => {Corrected sentence}
+  **Explains**
   `;
   const prompt = `Please analyze my sentence, provide an evaluation and spell check, and suggest an improved version.: ${q}`;
   const { textStream } = streamText({
