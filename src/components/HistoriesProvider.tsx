@@ -35,6 +35,7 @@ const HistoriesProvider: Component<{
     } catch (e: unknown) {
       if (e instanceof Error) {
         setHistories([]);
+        localStorage.clear();
       }
     }
   });

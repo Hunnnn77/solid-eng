@@ -15,14 +15,12 @@
 }
 
 .app-button:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
+  filter: brightness(1.1);
 }
 
 .app-button:disabled {
   cursor: progress;
   opacity: 0.72;
-  transform: none;
 }
 
 .app-button-muted {

@@ -111,10 +111,6 @@ const Header: Component = () => {
               openDialog();
             }
             break;
-          case "ESC":
-            e.preventDefault();
-            setHistoryOpen(false);
-            break;
         }
       });
     }
@@ -156,8 +152,8 @@ const Header: Component = () => {
               </For>
 
               <Show when={historyOpen()}>
-                <Portal mount={document.querySelector("main")!}>
-                  <div class="absolute top-0 left-0 z-10 opacity-50 bg-black w-full h-full"></div>
+                <Portal mount={document.querySelector("body")!}>
+                  <div class="absolute top-0 left-0 z-10 opacity-40 bg-black w-full h-full"></div>
                   <div class="app-dialog panel-surface panel-border z-20">
                     <Show
                       when={catched()}
@@ -178,7 +174,17 @@ const Header: Component = () => {
                       <div>
                         <div class="flex justify-between items-center mb-6">
                           <h1 class="hero-title capitalize">{catched()?.text}</h1>
-                          <Button callback={() => setHistoryOpen(false)}>close</Button>
+                          <div class="flex space-x-2">
+                            <Button
+                              callback={() => {
+                                setHistoryOpen(false);
+                                openDialog();
+                              }}
+                            >
+                              back
+                            </Button>
+                            <Button callback={() => setHistoryOpen(false)}>close</Button>
+                          </div>
                         </div>
                         <Prose text={catched()?.answer ?? ""}></Prose>
                       </div>

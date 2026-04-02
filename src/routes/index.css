@@ -177,10 +177,6 @@
   margin: auto;
 }
 
-.app-dialog::backdrop {
-  background-color: rgba(4, 8, 14, 0.6);
-}
-
 .app-dialog h3 {
   margin: 0 0 0.75rem;
   font-family: "Fraunces", Georgia, serif;
