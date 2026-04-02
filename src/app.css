@@ -48,6 +48,11 @@ body {
   }
 }
 
+img, svg {
+  width: 25px;
+  height: 25px;
+}
+
 dialog::backdrop {
   @apply bg-black opacity-40;
 }

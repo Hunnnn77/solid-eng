@@ -125,10 +125,7 @@ const Header: Component = () => {
         </div>
 
         <div class="header-actions">
-          <Button callback={() => lenOfHistory() > 0 && openDialog()}>
-            <span>[F1]</span>
-            <span>history({lenOfHistory()})</span>
-          </Button>
+          <Button buttonType="history" callback={() => lenOfHistory() > 0 && openDialog()}></Button>
         </div>
       </div>
 
@@ -137,7 +134,7 @@ const Header: Component = () => {
           <Show when={lenOfHistory() > 0}>
             <div class="flex items-center justify-between mb-6">
               <h2 class="secondary-head secondary-head--capitalize">history</h2>
-              <Button callback={closeDialog}>close</Button>
+              <Button buttonType="close" callback={closeDialog}></Button>
             </div>
             <div class="history-list">
               <For each={historyCtx.histories()}>
@@ -165,9 +162,8 @@ const Header: Component = () => {
                           <Button
                             class="history-preview-empty-close"
                             callback={() => setHistoryOpen(false)}
-                          >
-                            close
-                          </Button>
+                            buttonType="back"
+                          ></Button>
                         </div>
                       }
                     >
@@ -176,14 +172,16 @@ const Header: Component = () => {
                           <h1 class="hero-title capitalize">{catched()?.text}</h1>
                           <div class="flex space-x-2">
                             <Button
+                              buttonType="back"
                               callback={() => {
                                 setHistoryOpen(false);
                                 openDialog();
                               }}
-                            >
-                              back
-                            </Button>
-                            <Button callback={() => setHistoryOpen(false)}>close</Button>
+                            ></Button>
+                            <Button
+                              buttonType="close"
+                              callback={() => setHistoryOpen(false)}
+                            ></Button>
                           </div>
                         </div>
                         <Prose text={catched()?.answer ?? ""}></Prose>
@@ -240,13 +238,11 @@ const WordSearcher: Component<{
 
   return (
     <section class="tool-card panel-surface panel-border panel-shadow">
-      <div class="tool-head">
-        <div>
-          <p class="eyebrow">Word Explorer</p>
-          <h2>Search a word</h2>
-        </div>
+      <p class="eyebrow">Word Explorer</p>
 
-        <Button disabled={disabled()} callback={collectWordStream} />
+      <div class="tool-head flex">
+        <h2>Search a word</h2>
+        <Button buttonType="search" disabled={disabled()} callback={collectWordStream} />
       </div>
 
       <Input
@@ -297,13 +293,10 @@ const ParagraphWriting: Component<{
 
   return (
     <section class="tool-card panel-surface panel-border panel-shadow">
-      <div class="tool-head">
-        <div>
-          <p class="eyebrow">Draft Doctor</p>
-          <h2>Polish a paragraph</h2>
-        </div>
-
-        <Button disabled={disabled()} callback={collectParagraphStream} />
+      <p class="eyebrow">Draft Doctor</p>
+      <div class="tool-head flex">
+        <h2>Polish a paragraph</h2>
+        <Button buttonType="search" disabled={disabled()} callback={collectParagraphStream} />
       </div>
 
       <Input
@@ -410,14 +403,14 @@ const YoutubeComponent: Component<{
   return (
     <aside class="side-pane panel-surface panel-border panel-shadow">
       <p class="eyebrow">Utility</p>
-      <h2>Transcript Source</h2>
+      <div class="flex justify-between">
+        <h2>Transcript</h2>
+        <Button buttonType="youtube" disabled={loading()} callback={open}></Button>
+      </div>
+
       <p class="side-copy">
         Save a YouTube URL here and keep your transcript source visible while writing.
       </p>
-
-      <Button disabled={loading()} callback={open}>
-        Add YouTube URL
-      </Button>
 
       <Show when={title().length > 0}>
         <div class="saved-link">
@@ -440,15 +433,15 @@ const YoutubeComponent: Component<{
       <dialog class="app-dialog panel-surface panel-border" ref={setDialogEl}>
         <h3>Video URL</h3>
         <input
-          class="input-field"
+          class="input-field mb-2"
           value={url()}
           type="url"
           placeholder="https://youtube.com/watch?v=VIDEO_ID"
           oninput={(e) => setUrl(e.target.value)}
         />
-        <div class="dialog-actions">
-          <Button callback={close}>close</Button>
-          <Button callback={save}>save</Button>
+        <div class="dialog-actions space-x-2">
+          <Button buttonType="close" callback={close}></Button>
+          <Button buttonType="save" callback={save}></Button>
         </div>
       </dialog>
     </aside>
