@@ -8,7 +8,7 @@ const Button: Component<{
   callback: () => void | Promise<void> | boolean;
   children?: JSXElement;
   class?: string;
-  buttonType: TButtonType;
+  buttonType?: TButtonType;
 }> = (props) => {
   const [s, p] = splitProps(props, ["disabled"]);
   const buttonClass = () => (p.class ? `${p.class} app-button` : "app-button");

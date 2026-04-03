@@ -6,6 +6,7 @@ import {
   createComputed,
   createEffect,
   createMemo,
+  createSelector,
   createSignal,
   For,
   Match,
@@ -13,6 +14,7 @@ import {
   Show,
   splitProps,
   Switch,
+  type Accessor,
   type Component,
 } from "solid-js";
 import { Input } from "~/components/Input";
@@ -29,29 +31,76 @@ import {
   type IHistory,
 } from "~/components/HistoriesProvider";
 
+type Tabs = "word" | "paragraph" | "youtube";
+const TAB_COPY: Record<Tabs, { title: string; hint: string }> = {
+  word: { title: "Word Searcher", hint: "Fast definitions" },
+  paragraph: { title: "Paragraph Polisher", hint: "Clarity rewrite" },
+  youtube: { title: "Youtube Transcript", hint: "Transcript analyze" },
+};
 export default function Home() {
   const transcription = useAction(transcriptionAction);
   const analyze = useAction(analyzeAction);
   const word = useAction(wordAction);
   const paragraph = useAction(paragraphAction);
+  const [tab, setTab] = createSignal<Tabs>("word");
+  const tabHeaders: [Tabs, Component<any>][] = [
+    ["word", WordSearcher],
+    ["paragraph", ParagraphWriting],
+    ["youtube", YoutubeComponent],
+  ];
+  const Comp = createMemo(() => tabHeaders.filter((e) => e[0].includes(tab())).flat());
 
   return (
     <div class="app-shell">
       <Title>English Studio</Title>
       <main class="main-pane">
         <Header />
-        <div class="tool-grid">
-          <div class="left-section">
-            <WordSearcher word={word} />
-            <ParagraphWriting paragraph={paragraph} />
-          </div>
+        <TabComponent tabHeaders={tabHeaders} tab={tab} setTab={setTab} />
 
-          <YoutubeComponent transcription={transcription} analyze={analyze} />
-        </div>
+        <Switch>
+          <Match when={Comp()[0] === "word"}>
+            <WordSearcher word={word} />
+          </Match>
+          <Match when={Comp()[0] === "paragraph"}>
+            <ParagraphWriting paragraph={paragraph} />
+          </Match>
+          <Match when={Comp()[0] === "youtube"}>
+            <YoutubeComponent transcription={transcription} analyze={analyze} />
+          </Match>
+        </Switch>
       </main>
     </div>
   );
 }
+
+const TabComponent: Component<{
+  tabHeaders: [Tabs, Component<any>][];
+  tab: Accessor<Tabs>;
+  setTab: (t: Tabs) => void;
+}> = (props) => {
+  const [s, p] = splitProps(props, ["tab"]);
+  const selectTab = (t: Tabs) => p.setTab(t);
+  const tabSelector = createSelector(s.tab);
+
+  return (
+    <nav class="tab-rail panel-surface panel-border panel-shadow" aria-label="Tool tabs">
+      <For each={p.tabHeaders}>
+        {([key, _]) => (
+          <button
+            type="button"
+            class="tab-pill"
+            classList={{ "tab-pill--active": tabSelector(key) }}
+            aria-pressed={tabSelector(key)}
+            onclick={() => selectTab(key)}
+          >
+            <span class="tab-pill-title">{TAB_COPY[key].title}</span>
+            <span class="tab-pill-hint">{TAB_COPY[key].hint}</span>
+          </button>
+        )}
+      </For>
+    </nav>
+  );
+};
 
 const Header: Component = () => {
   const historyCtx = useHistoryContext();
@@ -119,13 +168,10 @@ const Header: Component = () => {
   return (
     <header class="hero-card panel-surface panel-border panel-shadow">
       <div class="header-row">
-        <div>
-          <p class="eyebrow">Writing companion</p>
+        <p class="eyebrow">Writing companion</p>
+        <div class="flex justify-between items-center md:space-x-4">
           <h1 class="hero-title hero-title--spaced">English Studio</h1>
-        </div>
-
-        <div class="header-actions">
-          <Button buttonType="history" callback={() => lenOfHistory() > 0 && openDialog()}></Button>
+          <Button callback={() => lenOfHistory() > 0 && openDialog()}>{lenOfHistory()}</Button>
         </div>
       </div>
 

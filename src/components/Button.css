@@ -1,9 +1,13 @@
 .app-button {
   border: 0;
   border-radius: 100%;
-  width: max-content;
+  width: 30px;
+  height: 30px;
   padding: 0.3rem;
   background: linear-gradient(145deg, var(--accent), var(--accent-strong));
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #2d1604;
   font-size: 0.82rem;
   font-weight: 800;

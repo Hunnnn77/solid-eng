@@ -10,6 +10,66 @@
   min-width: 0;
 }
 
+.tab-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0.55rem;
+  animation: rise-in 560ms ease-out;
+}
+
+.tab-pill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.15rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(12, 21, 39, 0.42);
+  color: var(--text-soft);
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.tab-pill:hover {
+  border-color: rgba(127, 214, 255, 0.46);
+  background: rgba(21, 38, 63, 0.5);
+}
+
+.tab-pill:focus-visible {
+  outline: 2px solid #7fd6ff;
+  outline-offset: 2px;
+}
+
+.tab-pill-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--text-main);
+}
+
+.tab-pill-hint {
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tab-pill--active {
+  border-color: rgba(127, 214, 255, 0.6);
+  background: linear-gradient(165deg, rgba(26, 44, 73, 0.86), rgba(17, 29, 50, 0.82));
+  color: var(--text-main);
+}
+
+.tab-pill--active .tab-pill-hint {
+  color: #7fd6ff;
+}
+
 .hero-card {
   padding: 1em;
   animation: rise-in 500ms ease-out;
@@ -306,6 +366,10 @@
   .tool-card,
   .side-pane {
     border-radius: 14px;
+  }
+
+  .tab-rail {
+    grid-template-columns: 1fr;
   }
 }
 
